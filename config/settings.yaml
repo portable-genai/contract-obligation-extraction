@@ -1,0 +1,91 @@
+# Contract Obligation Extraction (Rgc12) runtime configuration.
+#
+# Loaded by `src/contract_obligation_extraction/config.py`. Point at a different file with
+# CONTRACT_SETTINGS; a path that is named but missing is a boot error, not
+# a silent fall-back to built-in defaults.
+#
+# `${VAR}` and `${VAR:-default}` resolve in THREE states: unset takes the default written here,
+# SET-AND-EMPTY REFUSES and raises at boot (an operator who emptied a value expressed an intent,
+# and it names nothing, so it must not inherit this default nor collapse to the empty string
+# that several of these fields treat as the permissive branch), and a set value wins. Unset the
+# variable to take the default. This file holds env var NAMES and non-secret defaults only: no
+# secret value is ever committed here.
+
+# Data residency. Selected once and shared by the runtime and Terraform.
+region: ${GCP_REGION:-asia-southeast1}
+
+# Tenant partition asserted on outbound reviews when the verified principal carries none.
+# (Built as one template expression: a literal "${" immediately before a template opener is
+# ambiguous to render, so the whole reference is produced by the expression instead.)
+tenant: ${CONTRACT_TENANT:-}
+
+# Local profile stores. ":memory:" is the ephemeral, deterministic default the gate uses; a
+# deployment points this at a durable path.
+audit_path: ${CONTRACT_AUDIT_PATH:-:memory:}
+
+# The external head anchor for the WORM audit chain (practices check C9). The hash chain cannot
+# detect a TRUNCATED TAIL by itself: dropping the newest rows leaves a shorter chain that
+# verifies perfectly. Point this at a file on a DIFFERENT volume, under different credentials,
+# from audit_path, and every append also writes the chain head there. Empty (the default) means
+# no anchor, which is correct for the ephemeral ":memory:" store and wrong for a durable one.
+audit_anchor_path: ${CONTRACT_AUDIT_ANCHOR:-}
+
+# The audience the managed (gcp) IAP identity adapter verifies the assertion AGAINST: the
+# IAP-protected resource, "/projects/<NUM>/global/backendServices/<ID>" behind an HTTPS load
+# balancer. It is per-deployment, so it is configuration and never a literal in the adapter.
+# Three states, and UNSET and SET-AND-EMPTY land in the same place on purpose: both resolve to
+# empty, and an empty audience REFUSES every caller rather than verifying without one.
+# google-auth documents audience=None as "the audience is not verified", which accepts ANY
+# Google-signed OIDC token, from any project or any app, and reads its email as a principal.
+iap_audience: ${CONTRACT_IAP_AUDIENCE:-}
+
+# Rule R8: where an escalated result is routed for human review. The managed profile REFUSES to
+# swallow an escalation when this is empty, so a producer cannot ship with R8 unwired.
+# The outbound S2S credentials are HRZ7_S2S_TOKEN / HRZ7_S2S_SIGNING_KEY (see .env.secrets.example),
+# deliberately distinct from this service's own inbound CONTRACT_S2S_TOKEN.
+review_url: ${HRZ_HUMAN_REVIEW_URL:-}
+
+# The per-port adapter map: the ONLY place a binding lives, so switching the whole stack is a
+# configuration change rather than a code edit. Every port must bind every profile; the loader
+# refuses a partial block and `tests/test_settings_file.py` fails the build if this drifts from
+# `config.DEFAULT_BINDINGS`.
+project_id: ${GOOGLE_CLOUD_PROJECT:-}
+
+adapters:
+  audit:
+    local: contract_obligation_extraction.adapters.local.audit:LocalAuditAdapter
+    gcp: contract_obligation_extraction.adapters.gcp.audit:CloudAuditAdapter
+    onprem: contract_obligation_extraction.adapters.onprem.audit:OnPremAuditAdapter
+  identity:
+    local: contract_obligation_extraction.adapters.local.identity:LocalIdentityAdapter
+    gcp: contract_obligation_extraction.adapters.gcp.identity:IapIdentityAdapter
+    onprem: contract_obligation_extraction.adapters.onprem.identity:OnPremIdentityAdapter
+  review_router:
+    local: contract_obligation_extraction.adapters.local.review_router:LocalReviewRouter
+    gcp: contract_obligation_extraction.adapters.gcp.review_router:CloudReviewRouter
+    onprem: contract_obligation_extraction.adapters.onprem.review_router:OnPremReviewRouter
+
+  # Tracing. Which BACKEND a deployed profile exports to is not a binding: the gcp
+  # adapter reads OTEL_EXPORTER_OTLP_ENDPOINT and sends OTLP to the Hrz5 collector when it
+  # is set, straight to Cloud Trace when it is not. Tracing is not essential to
+  # correctness, so onprem is ABSENT rather than fatal, unlike the other placeholders.
+  tracer:
+    local: contract_obligation_extraction.adapters.local.tracer:LocalNoopTracerAdapter
+    gcp: contract_obligation_extraction.adapters.gcp.tracer:CloudTracerAdapter
+    onprem: contract_obligation_extraction.adapters.onprem.tracer:OnPremTracerAdapter
+
+  # The promotion authority (Hrz4). The local adapter scores offline but REFUSES to
+  # promote: a promotion certified by a laptop with no quality service is certified by
+  # nothing.
+  evaluation:
+    local: contract_obligation_extraction.adapters.local.evaluation:LocalOfflineEvalAdapter
+    gcp: contract_obligation_extraction.adapters.gcp.evaluation:ManagedEvalGateAdapter
+    onprem: contract_obligation_extraction.adapters.onprem.evaluation:OnPremEvalAdapter
+  generation:
+    local: contract_obligation_extraction.adapters.local.generation:LocalGenerationAdapter
+    gcp: contract_obligation_extraction.adapters.gcp.generation:CloudGenerationAdapter
+    onprem: contract_obligation_extraction.adapters.onprem.generation:OnPremGenerationAdapter
+  extraction:
+    local: contract_obligation_extraction.adapters.local.extraction:LocalExtractionAdapter
+    gcp: contract_obligation_extraction.adapters.gcp.extraction:CloudExtractionAdapter
+    onprem: contract_obligation_extraction.adapters.onprem.extraction:OnPremExtractionAdapter

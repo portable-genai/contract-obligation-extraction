@@ -1,0 +1,8 @@
+# Golden triage cases (obviously fictional). Fields: subject, text, expected_severity, planted.
+# `planted` is a raw identifier deliberately embedded in the text; the redact-before-audit step
+# must mask it, so the pii_safety metric goes red if any raw identifier survives into an audit
+# record. NRIC values must be checksum-valid or the validator will not mask them.
+{"id": "c1", "subject": "Acme Holdings Pte Ltd (FICTIONAL)", "text": "Routine onboarding with a minor delay in supporting documents.", "expected_severity": "medium"}
+{"id": "c2", "subject": "Beta Trading (FICTIONAL)", "text": "Suspected fraud with possible sanction exposure flagged by screening.", "expected_severity": "critical"}
+{"id": "c3", "subject": "Gamma LLP (FICTIONAL)", "text": "Data breach reported; urgent review needed. Contact NRIC S1234567D or ops@fictional.example.", "expected_severity": "high", "planted": "S1234567D"}
+{"id": "c4", "subject": "Delta Co (FICTIONAL)", "text": "General inquiry about account status, no issues noted.", "expected_severity": "low"}

@@ -1,0 +1,43 @@
+# Automated dependency updates for every ecosystem this repo actually pins.
+#
+# Pairs with the committed lockfiles (requirements-*.lock), the digest-pinned base image
+# (Dockerfile) and the SHA-pinned GitHub Actions: dependabot proposes the bumps, and the hard
+# gate plus its pip-audit job decide. An ecosystem missing here is a pin nobody is watching.
+#
+# Cadence is deliberate, not inherited: pip is DAILY because the Python surface is where the
+# catalog's vulnerabilities land and a lockfile only helps if it moves; images and Actions are
+# weekly because they change slowly and each bump costs a review.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: daily
+    groups:
+      python-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  # The `ui/` micro-frontend. Daily, matching pip: the npm surface moves fastest of all, and the
+  # ui-gate workflow fails on any high-severity advisory, so an unwatched lockfile here would
+  # turn a routine bump into a red build nobody expected.
+  #
+  # REMOVE THIS BLOCK IF YOU REMOVE `ui/`. Dependabot errors on a directory that does not exist,
+  # and `tests/unit/test_ui_surface.py` fails the offline gate if the two disagree in EITHER
+  # direction. `make drop-ui` does both halves in one step.
+  - package-ecosystem: npm
+    directory: /ui
+    schedule:
+      interval: daily
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]

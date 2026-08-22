@@ -1,0 +1,15 @@
+# Golden contract oracle for the obligation-extraction engine (obviously fictional contracts).
+#
+# Each row is one seed contract (domain/corpus.py:SEED_CONTRACTS), read by the local fixture
+# extractor and admitted by the deterministic engine as of domain.corpus.AS_OF (2026-06-01). The
+# `expected_*` fields and the per-clause `rows` are the INDEPENDENT oracle: the admitted clause
+# linkages, the validated risk flags per clause and the deadline status are hand-computed from the
+# contract text and the taxonomy and frozen here. The eval scores the engine against these, NEVER
+# against its own output, so a drift in segmentation, the taxonomy or the renewal clock turns a
+# metric red. Deadline buckets: none | upcoming | due_soon | in_notice | breached. `rows` is keyed
+# by clause number; every admitted obligation must link to exactly one of these clauses.
+{"contract_id": "meridian-msa-2026", "family": "msa", "expected_dropped": 1, "expected_needs_review": 2, "expected_severity": "high", "rows": {"1": {"flags": ["termination_renewal"], "deadline": "in_notice"}, "3": {"flags": ["liability_cap"], "deadline": "none"}, "4": {"flags": ["indemnity"], "deadline": "none"}, "5": {"flags": ["audit_step_in"], "deadline": "none"}, "6": {"flags": ["sub_outsourcing"], "deadline": "none"}}}
+{"contract_id": "meridian-sow-014", "family": "sow", "expected_dropped": 0, "expected_needs_review": 0, "expected_severity": "low", "rows": {"1": {"flags": [], "deadline": "none"}, "2": {"flags": [], "deadline": "upcoming"}}}
+{"contract_id": "meridian-dpa-2026", "family": "dpa", "expected_dropped": 0, "expected_needs_review": 3, "expected_severity": "high", "rows": {"1": {"flags": ["data_residency"], "deadline": "none"}, "2": {"flags": ["sub_outsourcing"], "deadline": "none"}, "3": {"flags": ["audit_step_in"], "deadline": "none"}, "4": {"flags": ["sla_commitment"], "deadline": "none"}, "5": {"flags": [], "deadline": "none"}}}
+{"contract_id": "apex-outsourcing-2026", "family": "outsourcing", "expected_dropped": 0, "expected_needs_review": 3, "expected_severity": "high", "rows": {"1": {"flags": ["termination_renewal"], "deadline": "breached"}, "2": {"flags": ["audit_step_in"], "deadline": "none"}, "3": {"flags": ["sub_outsourcing"], "deadline": "none"}, "4": {"flags": ["sla_commitment"], "deadline": "none"}, "5": {"flags": ["liability_cap"], "deadline": "none"}}}
+{"contract_id": "global-isda-2026", "family": "isda", "expected_dropped": 0, "expected_needs_review": 1, "expected_severity": "high", "rows": {"1": {"flags": ["termination_renewal"], "deadline": "none"}, "2": {"flags": ["sla_commitment"], "deadline": "none"}, "3": {"flags": [], "deadline": "none"}, "4": {"flags": ["indemnity"], "deadline": "none"}}}

@@ -1,0 +1,19 @@
+# Normalise line endings on commit so a checkout on any platform is byte-identical.
+* text=auto eol=lf
+
+# Binary assets: never normalised, never diffed as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.db binary
+*.woff binary
+*.woff2 binary
+
+# Generated resolutions. Diffing them line by line is noise in review.
+uv.lock -diff
+*.lock -diff
+package-lock.json -diff

@@ -1,0 +1,113 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "contract-obligation-extraction"
+version = "0.0.1"
+description = "Structured register of obligations, key clauses, dates and risk flags extracted from contracts."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Ashish Awasthi" }]
+
+# The catalog commons, pinned by tag (no build-time coupling: a deliberate per-repo bump). Each
+# package carries its own release line, so each has its own cookiecutter variable. The managed
+# cloud SDKs live in the [gcp] extra so the local/onprem gate installs none of them.
+#
+# `review-kit` is not optional: rule R8 says a producer that sets `requires_human_review`
+# MUST route the item to the Hrz7 Human-Review console rather than terminate the escalation in a
+# per-repo boolean, and the ReviewRouterPort adapters are bound in EVERY profile.
+dependencies = [
+  "pii-kit @ git+https://github.com/portable-genai/pii-kit@v0.0.1",
+  "hex-service-kit[fastapi] @ git+https://github.com/portable-genai/hex-service-kit@v0.0.1",
+  "agent-eval-kit @ git+https://github.com/portable-genai/agent-eval-kit@v0.0.1",
+  "review-kit @ git+https://github.com/portable-genai/review-kit@v0.0.1",
+  # The obligation-register kernel: BORN in Rgc7 and pinned here by the SAME tag, never vendored.
+  # The catalog declares the engine built once and applied to a contractual corpus in this repo.
+  # The lockfiles pin the resolved commit.
+  "obligation-register-kit @ git+https://github.com/portable-genai/obligation-register-kit@v0.0.1",
+  "pyyaml>=6.0",
+  "uvicorn>=0.30",
+]
+
+[project.optional-dependencies]
+# The SDK-free dev/test/CI toolchain. Ruff is pinned EXACTLY so formatting never drifts.
+dev = [
+  "ruff==0.15.18",
+  "mypy>=1.10",
+  "pytest>=8.2",
+  "types-PyYAML>=6.0",
+]
+# Managed cloud SDKs (lazy-imported by the gcp adapters). NOT installed by the local gate.
+gcp = [
+  "google-cloud-logging>=3.0",
+  "google-auth>=2.0",
+]
+
+[project.scripts]
+contract_obligation_extraction = "contract_obligation_extraction.cli.main:main"
+
+[project.urls]
+Homepage = "https://github.com/portable-genai/contract-obligation-extraction"
+Source = "https://github.com/portable-genai/contract-obligation-extraction"
+
+# The commons are pinned by git+https (direct references); allow them for this project.
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/contract_obligation_extraction"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.isort]
+# The test-support package sorts into its own section, AFTER the first-party package. Without
+# this, `import contract_obligation_extraction` and `import tests` share a section and their
+# order depends on how the package name happens to sort against the word "tests": a repo
+# rendered with a later-sorting name would need a different (and only different) import order.
+known-local-folder = ["tests"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src"]
+
+# The managed SDKs are LAZY imports inside methods and are not installed by the SDK-free dev
+# toolchain, so mypy's verdict about them used to depend on what happened to be in the venv:
+# absent it reported `import-not-found`, present-but-unstubbed it reported `import-untyped`, and
+# a `# type: ignore[import-not-found]` written for the first became an `unused-ignore` ERROR
+# under the second. `mypy src` was therefore red for any developer who had google-auth installed
+# for some other reason, and it went red the moment this repo's own IAP negative matrix needed
+# the verifier present. One declaration here, matching the rest of the catalog, so the type
+# check says the same thing either way.
+[[tool.mypy.overrides]]
+module = ["google.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+# The demo scripts are importable from the suite, so `tests/unit/test_demo_surface.py` can drive
+# the real demo instead of asserting that some files exist. Declared here rather than with a
+# `sys.path` insert in a conftest: a path hack is invisible to the reader of the failing test.
+#
+# `eval` is here for the same reason: `tests/unit/test_not_falsely_green.py` imports `run_eval`
+# so the falsification exercises the SHIPPED scorer rather than a lookalike defined above the
+# assertion. A metric proved able to go red by a local helper proves nothing about the metric CI
+# actually runs, which is exactly how a falsely green pii_safety survived.
+#
+# Neither `scripts` nor `eval` is added to `[tool.ruff] src`. If either were, a sibling import
+# such as `import demo` or `import run_eval` would share an isort section with
+# `import <package>`, and the correct import order would depend on how the rendered package name
+# sorts against the word "demo". Same trap as `known-local-folder` below solves for `tests`.
+pythonpath = ["scripts", "eval"]
+markers = [
+  "integration: tests that need live cloud services (deselected by default)",
+]

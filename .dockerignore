@@ -1,0 +1,70 @@
+# Keep the serving image small and free of secrets, tests and dev cruft.
+
+# VCS & CI
+.git/
+.github/
+.gitignore
+
+# Python caches & build output
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Node / Next.js (a UI is built and deployed separately, never in the API image)
+ui/
+node_modules/
+.next/
+out/
+
+# Terraform (infra, not app)
+infra/
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+
+# Secrets / env / credentials
+.env
+.env.*
+!.env.example
+!.env.secrets.example
+*.pem
+*.key
+*-key.json
+service-account*.json
+application_default_credentials.json
+
+# Tests, eval, docs and the demo surface are not needed at runtime. The demo scripts in
+# particular must never ship in a serving image: they exist to drive synthetic data through the
+# service, and an image that can do that is an image with an unnecessary attack surface.
+tests/
+eval/
+docs/
+scripts/
+demo.json
+*.md
+!README.md
+
+# Editor / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+tmp/
+scratch/

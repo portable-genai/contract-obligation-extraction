@@ -1,0 +1,8 @@
+{
+  "locals": {
+    "render_region": "asia-southeast1",
+    "render_package_name": "contract_obligation_extraction",
+    "render_env_prefix": "CONTRACT",
+    "render_catalog_id": "Rgc12"
+  }
+}

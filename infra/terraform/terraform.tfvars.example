@@ -1,0 +1,103 @@
+# terraform.tfvars.example: copy to terraform.tfvars and edit.
+#
+# Two postures are shown. The first is a project-scoped evaluation stack that a caller without
+# org-level roles can apply and later destroy; it is NOT compliant for production and says so.
+# The second is the sovereign posture this repo is written for. Everything not listed here
+# keeps the default in variables.tf, and the defaults are the strict ones.
+#
+# The state backend is partial (providers.tf). Initialise it with the reviewed bucket:
+#   terraform init -backend-config="bucket=YOUR_STATE_BUCKET" \
+#                  -backend-config="prefix={{ cookiecutter.project_slug }}/ENVIRONMENT"
+# Offline validation of this configuration needs no bucket and no credentials, and is what
+# `make tf-check` and the terraform CI job run:
+#   terraform init -backend=false && terraform validate && terraform fmt -check -recursive
+#   terraform test
+
+project_id = "fictional-{{ cookiecutter.package_name }}-project" # obviously fictional; replace
+
+# ----------------------------------------------------------------------------- #
+# Residency. This repo was rendered for {{ cookiecutter.region }}, and that is the
+# default for both variables below (they are nullable in variables.tf and made
+# effective in naming.tf from render.tf.json), what the org-policy allowlist pins,
+# and what the application validates its own configured region against at settings
+# load. Both lines are commented out because the rendered default already says it;
+# uncomment only to move or widen, and confirm first that the whole managed stack
+# (Vertex AI, Cloud KMS, Cloud Logging, Cloud Run) and this vertical's residency
+# obligation are both satisfied in the new region.
+# ----------------------------------------------------------------------------- #
+# region          = "{{ cookiecutter.region }}"
+# allowed_regions = ["{{ cookiecutter.region }}"]
+
+# ----------------------------------------------------------------------------- #
+# POSTURE A: quick evaluation (project-scoped, no org roles, fully destroyable).
+# NOT a compliant production deployment. Uncomment the three lines together.
+# ----------------------------------------------------------------------------- #
+# enable_org_policies = false
+# enable_vpc_sc       = false
+# worm_locked         = false
+
+# ----------------------------------------------------------------------------- #
+# POSTURE B: sovereign (the defaults). Org policies on, WORM bucket locked, and a
+# VPC-SC perimeter that starts in DRY RUN. Supply the access policy id, apply,
+# read the vpc_sc_denials alert for a full business cycle, add the operators, and
+# only then set vpc_sc_enforce = true.
+# ----------------------------------------------------------------------------- #
+access_policy_id = "123456789012"
+vpc_sc_enforce   = false
+operator_members = [
+  # "user:platform-lead@example.com",
+  # "serviceAccount:ci@fictional-{{ cookiecutter.package_name }}-project.iam.gserviceaccount.com",
+]
+
+# Retention is deliberate because the lock is irreversible. 180 days is the floor.
+retention_days = 180
+worm_locked    = true
+
+alert_notification_channels = [
+  # "projects/fictional-{{ cookiecutter.package_name }}-project/notificationChannels/1234567890123456789",
+]
+
+# Set a per-repo prefix whenever more than one catalog service deploys into the same
+# project: it renames the key ring, the WORM bucket, the service account, the metrics,
+# the perimeter and the Cloud Run service in one place.
+# name_prefix = "agent"
+
+# ----------------------------------------------------------------------------- #
+# The serving edge. Disabled by default, so the residency, encryption and audit
+# stack can be applied and reviewed before anything serves traffic.
+# ----------------------------------------------------------------------------- #
+production_edge_enabled = false
+
+# api_image must be pinned by digest: a tag can be re-pushed, so a tag pin lets what
+# serves change with no diff.
+# api_image      = "{{ cookiecutter.region }}-docker.pkg.dev/fictional-{{ cookiecutter.package_name }}-project/agent/api@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+# service_domain = "{{ cookiecutter.project_slug }}.fictional-bank.example"
+# dns_managed_zone = "fictional-bank-example"
+
+# Rule R8: the Hrz7 console an escalation is routed to. Required when the edge is
+# enabled, because the managed router refuses rather than swallowing an escalation.
+# human_review_url = "https://review.fictional-bank.example"
+
+# Rule R5 and rule R2: the Hrz4 promotion authority and the Hrz5 collector. Leave a
+# variable out entirely rather than setting it to an empty string; empty is read as a
+# deliberate "no authority named" and refuses.
+# quality_service_url = "https://quality.fictional-bank.example"
+# otlp_endpoint       = "https://otel-collector.fictional-bank.example:4318"
+
+# Identity. IAP is the only way an end user can be authenticated here.
+# edge_iap_enabled = true
+# iap_members      = ["group:reviewers@example.com"]
+
+# Set this to the `iap_audience` OUTPUT of the first apply, then apply again. Until it
+# is set, the service starts, stays health-checkable and refuses every end-user request
+# with a 503 naming {{ cookiecutter.env_prefix }}_IAP_AUDIENCE.
+# iap_audience = "/projects/123456789012/global/backendServices/1234567890123456789"
+
+# Credentials arrive as pinned Secret Manager versions, never as values here. The names
+# this stack sets itself are reserved (naming.tf), so a secret cannot silently shadow the
+# residency, identity or routing wiring.
+# additional_secret_env = {
+#   {{ cookiecutter.env_prefix }}_S2S_TOKEN = { secret_id = "inbound-s2s", version = "3" }
+#   HRZ7_S2S_TOKEN       = { secret_id = "hrz7-outbound-s2s", version = "2" }
+#   HRZ7_S2S_SIGNING_KEY = { secret_id = "hrz7-actor-signing", version = "1" }
+# }

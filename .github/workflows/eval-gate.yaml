@@ -1,0 +1,57 @@
+name: Eval gate
+
+# The pre-merge eval SMOKE check, kept as its own required check rather than buried inside the
+# hard gate. Two reasons it is separate:
+#
+#   1. Branch protection can require it by NAME, so an eval regression blocks a merge on its own
+#      terms instead of hiding behind a green "CI" tick.
+#   2. It is the check that goes red when the model, the prompt or the golden set moves, which is
+#      a different class of failure from a lint or a type error and deserves its own signal.
+#
+# This is NOT the promotion authority. The authoritative verdict belongs to the Hrz4 AI-quality
+# service (`eval/run_eval.py --mode gate`), which refuses to run off the managed profile and is
+# invoked at release time, not on a pull request.
+#
+# No profile variable is set here, and that is not the same as relying on a fallback: the smoke
+# path NAMES its profile in code (`Settings(profile="local", ...)` in `eval/run_eval.py`), which
+# is a deliberate choice by construction. Absence is not consent anywhere in this repo, so a job
+# that needed the offline posture from the ENVIRONMENT would have to say so, exactly as the
+# Makefile does for every target it owns.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eval-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  eval:
+    name: eval smoke check (pre-merge)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      # The locked install, exactly as the hard gate and the image do it: an eval scored against
+      # a different version set than the one that ships is an eval about nothing.
+      - name: Install (locked)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.lock
+          pip install --no-deps -e .
+
+      - name: Run eval smoke check
+        run: python eval/run_eval.py --mode smoke
