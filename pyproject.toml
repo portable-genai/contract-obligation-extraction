@@ -34,7 +34,7 @@ dependencies = [
 [project.optional-dependencies]
 # The SDK-free dev/test/CI toolchain. Ruff is pinned EXACTLY so formatting never drifts.
 dev = [
-  "ruff==0.15.18",
+  "ruff==0.16.3",
   "mypy>=1.10",
   "pytest>=8.2",
   "types-PyYAML>=6.0",
