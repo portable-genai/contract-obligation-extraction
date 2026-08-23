@@ -64,6 +64,10 @@ async function waitForServer(url, deadline) {
 const server = spawn("npx", ["next", "start", "-p", REQUESTED_PORT], {
   env: SERVER_ENV,
   stdio: ["ignore", "pipe", "pipe"],
+  // Own process group. `npx` is a wrapper around the real server, so signalling only the
+  // child leaves the grandchild alive holding these pipes, and node then never exits. A
+  // group can be signalled as a whole.
+  detached: true,
 });
 let serverLog = "";
 let reportedPort = null;
@@ -135,5 +139,24 @@ try {
     }
   }
 } finally {
-  server.kill("SIGTERM");
+  // Signal the whole group, not just the `npx` wrapper: killing the wrapper alone leaves the
+  // real server holding these pipes and this process never exits, so a finished assertion
+  // becomes a timed-out build rather than a pass. Escalate if SIGTERM is ignored, and stop
+  // waiting on the child either way.
+  const stop = (signal) => {
+    try {
+      process.kill(-server.pid, signal);
+    } catch {
+      try {
+        server.kill(signal);
+      } catch {
+        /* already gone */
+      }
+    }
+  };
+  stop("SIGTERM");
+  setTimeout(() => stop("SIGKILL"), 5_000).unref();
+  server.stdout?.destroy();
+  server.stderr?.destroy();
+  server.unref();
 }
