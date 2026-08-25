@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -264,25 +265,33 @@ def test_an_assertion_signed_by_the_wrong_key_is_rejected(
 
 
 @pytest.mark.parametrize(
-    "assertion",
+    ("assertion", "reason"),
     [
-        "not-a-jwt",
-        "eyJhbGciOiJSUzI1NiJ9",
-        "a.b.c",
-        "...",
-        "eyJhbGciOiJub25lIn0.eyJlbWFpbCI6ImF0dGFja2VyQGV2aWwuZXhhbXBsZSJ9.",
+        ("not-a-jwt", "not a compact JWS or JWE"),
+        ("eyJhbGciOiJSUzI1NiJ9", "not a compact JWS or JWE"),
+        ("a.b.c", "not base64url-encoded JSON"),
+        ("...", "not a compact JWS or JWE"),
+        (
+            "eyJhbGciOiJub25lIn0.eyJlbWFpbCI6ImF0dGFja2VyQGV2aWwuZXhhbXBsZSJ9.",
+            "alg 'none', which means it is UNSIGNED",
+        ),
     ],
     ids=["garbage", "one-segment", "three-bad-segments", "dots", "alg-none"],
 )
 def test_a_malformed_assertion_is_a_refusal_and_never_an_escaping_exception(
-    keys: dict[str, Any], fake_transport: list[str], assertion: str
+    keys: dict[str, Any], fake_transport: list[str], assertion: str, reason: str
 ) -> None:
     """CRITICAL 2, at the source: ``MalformedError`` is a ``ValueError``, not an IdentityError.
 
     Unwrapped it escaped ``get_principal`` and FastAPI answered a bare 500. The ``alg: none``
     cell is here because an unsigned token is the classic way to skip verification entirely.
+
+    Each cell asserts its OWN refusal reason rather than a shared "verification failed". The
+    alg-none cell is why: a refusal that merely says "failed" cannot distinguish an unsigned
+    token that was recognised as unsigned from one that was rejected for being unparseable, and
+    those are different security properties.
     """
-    with pytest.raises(IdentityError, match="verification failed"):
+    with pytest.raises(IdentityError, match=re.escape(reason)):
         _resolve(assertion)
 
 
@@ -290,27 +299,45 @@ def test_a_malformed_assertion_is_a_refusal_and_never_an_escaping_exception(
 # Rejected by the adapter, AFTER a valid signature: verify_token does not check the issuer.
 # --------------------------------------------------------------------------------------- #
 @pytest.mark.parametrize(
-    "issuer",
-    ["https://accounts.google.com", "https://securetoken.google.com/some-project", ""],
+    ("issuer", "reason"),
+    [
+        ("https://accounts.google.com", "issued by a party this deployment does not accept"),
+        (
+            "https://securetoken.google.com/some-project",
+            "issued by a party this deployment does not accept",
+        ),
+        ("", "missing required claim(s): iss"),
+    ],
     ids=["oauth2-issuer", "firebase-issuer", "no-issuer"],
 )
 def test_a_validly_signed_assertion_from_the_wrong_issuer_is_rejected(
-    keys: dict[str, Any], fake_transport: list[str], issuer: str
+    keys: dict[str, Any], fake_transport: list[str], issuer: str, reason: str
 ) -> None:
-    """Right key, right audience, unexpired. ``verify_token`` returns these claims happily."""
-    with pytest.raises(IdentityError, match="issuer"):
+    """Right key, right audience, unexpired. ``verify_token`` returns these claims happily.
+
+    A NAMED wrong issuer and an ABSENT one are two refusals, not one: the first is a token from a
+    real Google issuer this deployment does not federate with, the second names nobody at all.
+    Matching both against the bare word "issuer" could not tell them apart.
+    """
+    with pytest.raises(IdentityError, match=re.escape(reason)):
         _resolve(_assertion(keys, issuer=issuer))
 
 
 @pytest.mark.parametrize(
-    ("email", "subject"),
-    [("", "accounts.google.com:1"), ("analyst@bank.example", "")],
+    ("email", "subject", "missing"),
+    [("", "accounts.google.com:1", "email"), ("analyst@bank.example", "", "sub")],
     ids=["no-email", "no-sub"],
 )
 def test_a_validly_signed_assertion_with_no_identity_in_it_is_rejected(
-    keys: dict[str, Any], fake_transport: list[str], email: str, subject: str
+    keys: dict[str, Any], fake_transport: list[str], email: str, subject: str, missing: str
 ) -> None:
-    with pytest.raises(IdentityError, match="sub and email"):
+    """The refusal must NAME the claim that was absent.
+
+    "sub and email" was true of the old message and is true of neither refusal now; worse, it
+    passed whichever claim was missing, so a verifier that had stopped checking ``sub`` entirely
+    would still have satisfied the no-email cell.
+    """
+    with pytest.raises(IdentityError, match=re.escape(f"missing required claim(s): {missing}")):
         _resolve(_assertion(keys, email=email, subject=subject))
 
 
