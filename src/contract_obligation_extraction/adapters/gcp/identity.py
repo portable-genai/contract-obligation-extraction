@@ -46,20 +46,26 @@ from __future__ import annotations
 from typing import Any
 
 from hex_service_kit.assertion import require_claims, require_pinned_algorithm
+from hex_service_kit.federation import IAP_ASSERTION_HEADER, IAP_ISSUER, IAP_KEYS_URL
 from hex_service_kit.identity import IdentityError, Principal, RequestContext
 
 from ...config import Settings
 from ...ports.identity import VERIFIED, EndUserAuthUnavailableError
 
-_IAP_ASSERTION_HEADER = "x-goog-iap-jwt-assertion"
+# The three transport facts are REBOUND from the kit, not re-declared here. They are the same
+# three strings in every repository that verifies an IAP assertion, and while each kept its own
+# copy the population could drift with nothing to notice: a repo that edited one of them alone
+# would still gate green, because a literal always agrees with itself. Rebinding makes a
+# divergence between this adapter and the reviewed set impossible rather than merely unlikely.
+_IAP_ASSERTION_HEADER = IAP_ASSERTION_HEADER
 
 #: The key set IAP signs its assertions with. NOT google-auth's default, which is the OAuth2
 #: federated set: pass no ``certs_url`` and a token signed by a different Google key set verifies.
-_IAP_KEYS_URL = "https://www.gstatic.com/iap/verify/public_key"
+_IAP_KEYS_URL = IAP_KEYS_URL
 
 #: The issuer every IAP assertion carries. ``verify_token`` does not check the issuer at all
 #: (``verify_oauth2_token`` is the wrapper that does), so this adapter checks it itself.
-_IAP_ISSUER = "https://cloud.google.com/iap"
+_IAP_ISSUER = IAP_ISSUER
 
 #: The claims this deployment requires before it reads any of them. Stated as a set rather than
 #: checked one field at a time, so adding a requirement is one edit and a claim that is present

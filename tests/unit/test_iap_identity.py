@@ -34,6 +34,7 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from hex_service_kit import federation as kit_federation
 from hex_service_kit.identity import IdentityError
 
 from contract_obligation_extraction.adapters.gcp.identity import (
@@ -243,6 +244,20 @@ def test_the_pinned_key_set_is_iaps_published_one() -> None:
     """A literal worth asserting: a typo here silently verifies against the wrong keys."""
     assert _IAP_KEYS_URL == "https://www.gstatic.com/iap/verify/public_key"
     assert _IAP_ISSUER == "https://cloud.google.com/iap"
+
+
+def test_the_transport_facts_are_the_commons_values() -> None:
+    """The header, the issuer and the key set are REBOUND from the kit, not re-declared.
+
+    The test above pins the two strings to their published values, which catches a typo. It
+    cannot catch the other half: an adapter that goes on declaring its own literals stays green
+    forever, because a local literal always agrees with itself, and the fleet only learns the
+    copies have drifted when two deployments disagree about which header carries identity.
+    Asserting them against the kit is what makes one edit to the reviewed set reach here.
+    """
+    assert _IAP_ASSERTION_HEADER == kit_federation.IAP_ASSERTION_HEADER
+    assert _IAP_ISSUER == kit_federation.IAP_ISSUER
+    assert _IAP_KEYS_URL == kit_federation.IAP_KEYS_URL
 
 
 def test_the_configured_audience_is_what_reaches_the_verifier(
