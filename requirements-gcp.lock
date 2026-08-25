@@ -17,7 +17,7 @@
 #
 # tag -> commit, and `tests/unit/test_repo_artifacts.py` proves each line against the tag
 # `pyproject.toml` names and against the other lockfile:
-#   hex-service-kit          v0.0.1 = 4cdf92a32e364d6d2f638823ee2f7d0f8f8da731
+#   hex-service-kit          v0.0.3 = d28baa1cc80deff1a69e6a7ffd84d3e948f83871
 #   agent-eval-kit           v0.0.1 = a79f0afd125ba81c0fec001f9617f9473d6d7ec1
 #   review-kit               v0.0.1 = 47c05c64fa115d9aa07c0f349be5ec5d807bbe95
 #   pii-kit                  v0.0.1 = 654493048a8434d645757cc916bb9d446313688f
@@ -91,7 +91,7 @@ h11==0.16.0
     # via
     #   httpcore
     #   uvicorn
-hex-service-kit @ git+https://github.com/portable-genai/hex-service-kit@4cdf92a32e364d6d2f638823ee2f7d0f8f8da731
+hex-service-kit @ git+https://github.com/portable-genai/hex-service-kit@d28baa1cc80deff1a69e6a7ffd84d3e948f83871
     # via contract-obligation-extraction (pyproject.toml)
 httpcore==1.0.9
     # via httpx
