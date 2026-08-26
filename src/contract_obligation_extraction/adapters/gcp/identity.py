@@ -46,7 +46,13 @@ from __future__ import annotations
 from typing import Any
 
 from hex_service_kit.assertion import require_claims, require_pinned_algorithm
-from hex_service_kit.federation import IAP_ASSERTION_HEADER, IAP_ISSUER, IAP_KEYS_URL
+from hex_service_kit.federation import (
+    IAP_ASSERTION_HEADER,
+    IAP_ISSUER,
+    IAP_KEYS_URL,
+    FederationPolicy,
+    principal_from_iap_claims,
+)
 from hex_service_kit.identity import IdentityError, Principal, RequestContext
 
 from ...config import Settings
@@ -71,6 +77,22 @@ _IAP_ISSUER = IAP_ISSUER
 #: checked one field at a time, so adding a requirement is one edit and a claim that is present
 #: but EMPTY counts as missing, which the previous per-field readers could not express.
 _REQUIRED_CLAIMS = ("iss", "sub", "email", "exp")
+
+#: The reviewed policy the CLAIM half is evaluated under, and the whole of what this
+#: deployment decides about a verified caller once its signature has been checked.
+#:
+#: It is a literal rather than a setting because every value in it is a decision this
+#: repository has already made and none of it varies by deployment yet: no domain is mapped
+#: to a tenant id, no domain is mapped to a group, and the hosted domain IS the tenant id
+#: here.
+#:
+#: ``tenant_from_hosted_domain`` is ON, and it is an OPT-IN rather than a fallback. IAP
+#: restricts the audience to one organisation on this deployment, so the ``hd`` claim and the
+#: tenant partition are the same string. Left OFF, these same assertions would resolve to no
+#: tenant at all: fail-closed, but closed for every verified user, and an offline gate would
+#: not notice, because the local profile never constructs this adapter. Writing the choice
+#: down is what makes it readable and testable; a silent fallback would be neither.
+_FEDERATION_POLICY = FederationPolicy(tenant_from_hosted_domain=True)
 
 #: Named for the refusal messages. The value is read through ``config/settings.yaml``, whose
 #: ``${VAR}`` expansion is the three-state read; nothing here touches ``os.environ``.
@@ -153,12 +175,20 @@ class IapIdentityAdapter:
         # it does not require that the assertion identify anybody, so the issuer and the claim
         # SET are both stated here rather than inherited.
         self._refuse_unpinned_claims(claims)
-        email = str(claims["email"]).strip()
-        return Principal(
-            subject=email,
-            tenant=str(claims.get("hd") or "").strip(),
-            assurance="iap",
+        # Everything after the signature is ONE reviewed decision, and it is the commons
+        # function rather than a fiftieth copy of it: which string is the subject, which
+        # partition is the tenant, which entitlement principals the caller holds, what
+        # assurance the audit record carries. The cryptography stays here, because the kit's
+        # core is pure standard library with no runtime dependencies and verifies nothing.
+        #
+        # ``include_subject_principal`` is stated, never defaulted. This adapter family leaves the
+        # tuple to the group map alone and the other family grants ``user:<subject>``; that is
+        # an authorization decision, so the call site says which one this is.
+        return principal_from_iap_claims(
+            claims,
+            _FEDERATION_POLICY,
             source="gcp-iap",
+            include_subject_principal=False,
         )
 
     def _refuse_unpinned_algorithm(self, assertion: str) -> None:
