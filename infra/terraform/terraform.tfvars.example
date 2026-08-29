@@ -98,6 +98,6 @@ production_edge_enabled = false
 # residency, identity or routing wiring.
 # additional_secret_env = {
 #   {{ cookiecutter.env_prefix }}_S2S_TOKEN = { secret_id = "inbound-s2s", version = "3" }
-#   HRZ7_S2S_TOKEN       = { secret_id = "hrz7-outbound-s2s", version = "2" }
-#   HRZ7_S2S_SIGNING_KEY = { secret_id = "hrz7-actor-signing", version = "1" }
+#   HUMAN_REVIEW_S2S_TOKEN       = { secret_id = "hrz7-outbound-s2s", version = "2" }
+#   HUMAN_REVIEW_S2S_SIGNING_KEY = { secret_id = "hrz7-actor-signing", version = "1" }
 # }

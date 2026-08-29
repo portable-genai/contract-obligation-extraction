@@ -137,8 +137,8 @@ loopback bound off a derived `bind_profile`, because those two fail closed in op
 see `config.ProfileChoice`.
 
 ## Human review routing (rule R8)
-Set `HRZ_HUMAN_REVIEW_URL` to the Hrz7 console (HTTPS is required off loopback) and provide
-`HRZ7_S2S_TOKEN`; `HRZ7_S2S_SIGNING_KEY` optionally signs the propagated actor. These are the
+Set `HUMAN_REVIEW_URL` to the Hrz7 console (HTTPS is required off loopback) and provide
+`HUMAN_REVIEW_S2S_TOKEN`; `HUMAN_REVIEW_S2S_SIGNING_KEY` optionally signs the propagated actor. These are the
 OUTBOUND credentials and are deliberately distinct from this service's own inbound
 `CONTRACT_S2S_TOKEN`. With the URL unset, the managed router REFUSES rather
 than swallowing the escalation, so a misconfiguration is a loud failure and never a silent
@@ -189,7 +189,7 @@ only `build_function_tools()` imports one.
 `make test-integration` runs `tests/integration/`, which the offline gate deselects. Each test
 SKIPS rather than fails when its configuration is absent, so an unconfigured run reports nothing
 rather than a false pass. It writes an obviously fictional audit record to the configured project
-and, when `HRZ_HUMAN_REVIEW_URL` is set, submits one fictional review to the live console.
+and, when `HUMAN_REVIEW_URL` is set, submits one fictional review to the live console.
 
 ## Alerts
 Alert on guardrail blocks, key creation, and VPC-SC perimeter denials (see the

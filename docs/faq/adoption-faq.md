@@ -36,7 +36,7 @@ Four things:
    Document AI processor id, the layout configuration and the long-context model are
    per-deployment. This is the biggest single piece of adoption work.
 3. **Your risk-flag taxonomy**, in `domain/flags.py`.
-4. **The review console.** An Hrz7 deployment reachable at `HRZ_HUMAN_REVIEW_URL`. Every ambiguous
+4. **The review console.** An Hrz7 deployment reachable at `HUMAN_REVIEW_URL`. Every ambiguous
    flag proposal goes there, so it is load-bearing here rather than an edge case, and the managed
    router REFUSES to swallow an escalation when it is empty.
 

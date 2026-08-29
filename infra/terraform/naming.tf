@@ -67,7 +67,7 @@ locals {
     "${local.render_env_prefix}_QUALITY_URL",
     "GOOGLE_CLOUD_PROJECT",
     "GCP_REGION",
-    "HRZ_HUMAN_REVIEW_URL",
+    "HUMAN_REVIEW_URL",
     "OTEL_EXPORTER_OTLP_ENDPOINT",
     "PORT",
   ]

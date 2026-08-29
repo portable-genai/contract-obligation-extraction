@@ -6,7 +6,7 @@ the tempting shorthand is ``os.environ.get(name, default)``, and that hands a va
 deliberately emptied exactly what it hands one nobody set.
 
 For a base URL the difference is not academic. The defaults are ``http://localhost:<port>``, so an
-emptied ``HRZ_AUDIT_URL`` in a deployed environment would not fail: it would silently point the
+emptied ``AUDIT_URL`` in a deployed environment would not fail: it would silently point the
 audit client at the pod's own loopback, where nothing is listening or, worse, something else is.
 Refusing at construction is the loud failure that an emptied value deserves.
 
