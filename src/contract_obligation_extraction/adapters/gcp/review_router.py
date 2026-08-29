@@ -2,9 +2,9 @@
 
 Builds the review from the escalated result and submits it to the Hrz7 service intake
 (``POST /v1/service/reviews``), authenticated as a trusted service caller. The console base URL
-comes from ``review_url`` in ``config/settings.yaml`` (default ``${HRZ_HUMAN_REVIEW_URL:-}``,
-the workspace-wide name the other producers use) and the credentials from the kit's own
-``HRZ7_S2S_TOKEN`` / ``HRZ7_S2S_SIGNING_KEY``, which are the OUTBOUND pair and deliberately
+comes from ``review_url`` in ``config/settings.yaml`` (default ``${HUMAN_REVIEW_URL:-}``,
+the workspace-wide name the other producers use) and the credentials from
+``HUMAN_REVIEW_S2S_TOKEN`` / ``HUMAN_REVIEW_S2S_SIGNING_KEY``, the OUTBOUND pair, deliberately
 distinct from this service's own inbound ``CONTRACT_S2S_TOKEN``.
 
 No cloud SDK is involved: the kit is pure stdlib ``urllib`` with S2S headers wire-compatible
@@ -37,10 +37,14 @@ class CloudReviewRouter:
             # caller would then treat a routed-nowhere result as reviewed.
             raise RuntimeError(
                 "review_url is not configured, so rule R8 cannot be honoured. Set "
-                "HRZ_HUMAN_REVIEW_URL (config/settings.yaml review_url) to the Hrz7 console."
+                "HUMAN_REVIEW_URL (config/settings.yaml review_url) to the Hrz7 console."
             )
         # Constructed per call so a credential rotated or cleared after start-up is seen; the
         # client refuses a plaintext non-loopback URL and a missing bearer at construction.
-        client = ReviewClient(base_url)
+        client = ReviewClient(
+            base_url,
+            token_env="HUMAN_REVIEW_S2S_TOKEN",
+            signing_key_env="HUMAN_REVIEW_S2S_SIGNING_KEY",
+        )
         review = result_to_review(result, maker=maker, tenant=tenant or self._settings.tenant)
         return client.submit(review, actor=_SERVICE_ACTOR).review_id

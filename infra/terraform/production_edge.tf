@@ -111,7 +111,7 @@ resource "google_cloud_run_v2_service" "api" {
       # Rule R8: the console an escalation is routed to. Required whenever the edge is enabled
       # (variables.tf), because the managed router refuses rather than swallowing one.
       env {
-        name  = "HRZ_HUMAN_REVIEW_URL"
+        name  = "HUMAN_REVIEW_URL"
         value = var.human_review_url
       }
 

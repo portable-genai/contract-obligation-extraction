@@ -183,7 +183,7 @@ run "serving_edge_contract" {
   }
 
   assert {
-    condition     = one([for item in google_cloud_run_v2_service.api[0].template[0].containers[0].env : item.value if item.name == "HRZ_HUMAN_REVIEW_URL"]) == var.human_review_url
+    condition     = one([for item in google_cloud_run_v2_service.api[0].template[0].containers[0].env : item.value if item.name == "HUMAN_REVIEW_URL"]) == var.human_review_url
     error_message = "Rule R8: the service must be told where an escalation is routed, or the managed router refuses."
   }
 
@@ -372,7 +372,7 @@ run "reject_moving_secret_version" {
     project_id    = "fictional-agent-project"
     enable_vpc_sc = false
     additional_secret_env = {
-      HRZ7_S2S_TOKEN = {
+      HUMAN_REVIEW_S2S_TOKEN = {
         secret_id = "hrz7-outbound-s2s"
         version   = "latest"
       }

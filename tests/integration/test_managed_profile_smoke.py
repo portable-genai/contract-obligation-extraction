@@ -25,7 +25,7 @@ from tests.fixtures import sample_cases
 pytestmark = pytest.mark.integration
 
 _PROJECT_ENV = "GOOGLE_CLOUD_PROJECT"
-_CONSOLE_ENV = "HRZ_HUMAN_REVIEW_URL"
+_CONSOLE_ENV = "HUMAN_REVIEW_URL"
 
 
 def _managed(**overrides: object) -> Settings:
