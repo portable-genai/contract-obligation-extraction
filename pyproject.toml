@@ -20,7 +20,7 @@ authors = [{ name = "Ashish Awasthi" }]
 # per-repo boolean, and the ReviewRouterPort adapters are bound in EVERY profile.
 dependencies = [
   "pii-kit @ git+https://github.com/portable-genai/pii-kit@v0.0.1",
-  "hex-service-kit[fastapi] @ git+https://github.com/portable-genai/hex-service-kit@v0.0.5",
+  "hex-service-kit[fastapi] @ git+https://github.com/portable-genai/hex-service-kit@v0.0.6",
   "agent-eval-kit @ git+https://github.com/portable-genai/agent-eval-kit@v0.0.1",
   "review-kit @ git+https://github.com/portable-genai/review-kit@v0.0.1",
   # The obligation-register kernel: BORN in Rgc7 and pinned here by the SAME tag, never vendored.
