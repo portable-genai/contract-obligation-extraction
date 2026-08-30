@@ -43,6 +43,10 @@ dev = [
 gcp = [
   "google-cloud-logging>=3.0",
   "google-auth>=2.0",
+  # Bound as the gcp implementation in config/settings.yaml and imported LAZILY by the
+  # adapters, so each module imported clean while its port was DEAD on the managed
+  # profile. Found by the lint-gcp job, the first check able to see these imports.
+  "google-cloud-documentai>=3.0",
 ]
 
 [project.scripts]
