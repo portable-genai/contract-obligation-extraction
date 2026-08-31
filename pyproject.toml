@@ -34,7 +34,7 @@ dependencies = [
 [project.optional-dependencies]
 # The SDK-free dev/test/CI toolchain. Ruff is pinned EXACTLY so formatting never drifts.
 dev = [
-  "ruff==0.16.4",
+  "ruff==0.16.5",
   # Floored at the version whose CONFIGURATION this repository now uses. `>=1.10` was not a
   # neutral floor: `follow_untyped_imports` and `untyped_calls_exclude` arrived in 1.14, so a
   # resolution below it would not understand the file it is configured by -- the currency
