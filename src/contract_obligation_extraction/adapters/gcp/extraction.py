@@ -31,7 +31,7 @@ class CloudExtractionAdapter:
         # Lazy imports: absent in the offline profiles and in CI, so this raises there rather than
         # answering, which is exactly the managed-family refusal the parity suite asserts. The
         # layout parse and the long-context read are wired here at deployment time.
-        import google.generativeai as genai  # noqa: F401  (long-context read; model _MODEL)
+        from google import genai  # noqa: F401  (long-context read; model _MODEL)
         from google.cloud import documentai  # noqa: F401  (layout parse; wired by the deployment)
 
         # The concrete Document AI batch call and the JSON schema binding are a deployment decision

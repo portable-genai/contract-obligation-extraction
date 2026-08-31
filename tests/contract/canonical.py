@@ -192,14 +192,14 @@ CANONICAL_CALLS: dict[str, PortCase] = {
     "generation": PortCase(
         invoke=_generation_invoke,
         answered=_generation_answered,
-        # The lazy `google.generativeai` import is the first thing the managed narrator does.
+        # The lazy `google.genai` import is the first thing the managed narrator does.
         managed_refusal=(ImportError,),
         detail="narrate the engine facts as a grounded note",
     ),
     "extraction": PortCase(
         invoke=_extraction_invoke,
         answered=_extraction_answered,
-        # The lazy `google.cloud` / `google.generativeai` import fails offline before any read.
+        # The lazy `google.cloud` / `google.genai` import fails offline before any read.
         managed_refusal=(ImportError,),
         detail="propose candidate obligations for one contract",
     ),

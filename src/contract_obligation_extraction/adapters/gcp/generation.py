@@ -5,6 +5,14 @@ engine and merely restated here. The Gemini SDK import lives INSIDE the method s
 ``local``/``onprem`` profiles import this module with no cloud SDK installed (the portability
 proof, and the reason the managed family refuses rather than succeeds under the offline gate). The
 import root is ``google.*``, which the repo's mypy override already covers.
+
+The SDK is ``google-genai``, the unified Google GenAI SDK. It replaced ``google-generativeai``,
+which is RETIRED; this module used the retired one until 2026-08-31 and the migration was not a
+pin bump, because the call shape differs: a stateful ``GenerativeModel`` holding the system
+instruction became a client plus a per-call ``GenerateContentConfig`` that carries it. The client
+is constructed with no arguments on purpose, which is what the retired SDK also did: credentials
+and backend come from the environment, so a deployment can send this at either the Gemini
+Developer API or Vertex (``GOOGLE_GENAI_USE_VERTEXAI``) without a code change here.
 """
 
 from __future__ import annotations
@@ -27,15 +35,18 @@ class CloudGenerationAdapter:
     ) -> GenerationResponse:  # pragma: no cover - needs live GCP
         # Lazy import: absent in the offline profiles and in CI, so this raises there rather than
         # answering, which is exactly the managed-family refusal the parity suite asserts.
-        import google.generativeai as genai
+        from google import genai
+        from google.genai import types
 
-        model = genai.GenerativeModel(self._MODEL, system_instruction=request.system)
-        completion = model.generate_content(
-            request.prompt,
-            generation_config={
-                "response_mime_type": "application/json",
-                "max_output_tokens": request.max_output_tokens,
-                "temperature": 0.2,
-            },
+        client = genai.Client()
+        completion = client.models.generate_content(
+            model=self._MODEL,
+            contents=request.prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=request.system,
+                response_mime_type="application/json",
+                max_output_tokens=request.max_output_tokens,
+                temperature=0.2,
+            ),
         )
         return GenerationResponse(text=completion.text or "", model=self._MODEL)

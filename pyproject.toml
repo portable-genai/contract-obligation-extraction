@@ -47,6 +47,7 @@ gcp = [
   # adapters, so each module imported clean while its port was DEAD on the managed
   # profile. Found by the lint-gcp job, the first check able to see these imports.
   "google-cloud-documentai>=3.0",
+  "google-genai>=2.0",
 ]
 
 [project.scripts]
