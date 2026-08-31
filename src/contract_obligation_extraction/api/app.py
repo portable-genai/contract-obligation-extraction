@@ -358,7 +358,13 @@ def audit_ping() -> dict[str, bool]:
 @app.get("/healthz", response_model=HealthResponse, tags=["ops"])
 def healthz() -> HealthResponse:
     settings = _container().settings
-    return HealthResponse(status="ok", profile=settings.profile, region=settings.region)
+    return HealthResponse(
+        status="ok",
+        profile=settings.profile,
+        region=settings.region,
+        runtime=settings.runtime,
+        generator_model=settings.generator_model,
+    )
 
 
 @app.get("/.well-known/agent-card.json", tags=["ops"])
