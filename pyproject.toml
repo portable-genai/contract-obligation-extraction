@@ -35,7 +35,11 @@ dependencies = [
 # The SDK-free dev/test/CI toolchain. Ruff is pinned EXACTLY so formatting never drifts.
 dev = [
   "ruff==0.16.4",
-  "mypy>=1.10",
+  # Floored at the version whose CONFIGURATION this repository now uses. `>=1.10` was not a
+  # neutral floor: `follow_untyped_imports` and `untyped_calls_exclude` arrived in 1.14, so a
+  # resolution below it would not understand the file it is configured by -- the currency
+  # decision's case, where a stale floor silently permits the behaviour just removed.
+  "mypy>=2.3.1",
   "pytest>=8.2",
   "types-PyYAML>=6.0",
 ]
@@ -84,6 +88,17 @@ python_version = "3.12"
 strict = true
 files = ["src"]
 
+# Two settings that exist so mypy's verdict does not depend on WHICH environment it runs in --
+# the property the rest of this section already exists to hold.
+#
+# `untyped_calls_exclude` drops exactly one complaint -- "this callee has no annotations" --
+# for the `google` namespace. `disallow_untyped_calls` exists to stop typed code calling OUR
+# untyped code; aimed at a third-party release it is a demand no work here can satisfy, and
+# proto-plus generates every message `__init__` without annotations. It silences nothing else:
+# a wrong attribute and a wrong argument type on the same call are still reported, which was
+# proved by planting both.
+untyped_calls_exclude = ["google"]
+
 # The managed SDKs are LAZY imports inside methods and are not installed by the SDK-free dev
 # toolchain, so mypy's verdict about them used to depend on what happened to be in the venv:
 # absent it reported `import-not-found`, present-but-unstubbed it reported `import-untyped`, and
@@ -95,6 +110,28 @@ files = ["src"]
 [[tool.mypy.overrides]]
 module = ["google.*"]
 ignore_missing_imports = true
+
+# `follow_untyped_imports` ANALYSES a dependency that ships no `py.typed` instead of resolving
+# it to nothing, so it is MORE checking rather than less. Measured, not assumed: a bogus method
+# on a `google.cloud.storage` client was reported by nothing before this and is an
+# `attr-defined` error after it, and turning it on immediately surfaced a real type confusion
+# in the Model Armor adapter that had been invisible in four trees.
+#
+# SCOPED to `google.*` on purpose. Set globally it also follows the 3.14 standard library,
+# where mypy 2.3.1 cannot parse `annotationlib.py` and reports `Invalid syntax` in a CPython
+# source file having checked nothing -- found by running the fleet rather than one sample.
+[[tool.mypy.overrides]]
+module = ["google.*"]
+follow_untyped_imports = true
+
+# Following is the right default and the WRONG answer for generated protobuf modules. Their
+# source builds every message class at import time through a descriptor builder, so mypy
+# reading it reports `Module has no attribute "Timestamp"` for a class that plainly exists --
+# a false finding, and one a blocking gate cannot carry. The `types-protobuf` stubs state the
+# truth instead, so mypy is pointed back at them here rather than at the builder.
+[[tool.mypy.overrides]]
+module = ["google.protobuf.*", "google._upb.*"]
+follow_untyped_imports = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
