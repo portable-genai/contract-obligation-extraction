@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { ProvenanceBanner } from "./ProvenanceBanner";
 import "./globals.css";
 
 // The title is intentionally generic. The service's own identity comes from its agent card at
@@ -20,7 +21,10 @@ export const dynamic = "force-dynamic";
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <ProvenanceBanner />
+        {children}
+      </body>
     </html>
   );
 }

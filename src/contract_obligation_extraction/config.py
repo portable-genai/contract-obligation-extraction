@@ -93,6 +93,48 @@ def _validate_profile(profile: str) -> str:
     return profile
 
 
+#: Profiles that mean "running on managed cloud infrastructure", for the banner's runtime half.
+_MANAGED_PROFILES: frozenset[str] = frozenset({"gcp"})
+
+#: The port whose ACTIVE binding decides what the provenance banner's model half says.
+#: Named once here so rebinding it for a profile changes the banner in the same edit.
+_GENERATOR_PORT: str = "generation"
+
+#: Constant names a managed adapter may declare its model id under. Several spellings because
+#: the fleet uses several, and a resolver that knew only one would report a bound model as
+#: unnamed.
+_MODEL_CONSTANTS: tuple[str, ...] = ("_MODEL", "_DEFAULT_MODEL")
+
+
+def _declared_model(binding: str) -> str:
+    """The model id the bound managed adapter declares, or an honest statement that it names none.
+
+    Resolved from the BINDING rather than from a settings string, which is the point: a settings
+    field would be a claim ABOUT the binding, and the two drift the first time somebody rebinds a
+    profile without remembering the second field. Importing the adapter module here is safe with
+    no cloud SDK installed -- every cloud import in these adapters lives inside the method that
+    needs it, which is the portability property the parity suite already asserts.
+
+    Returns ``managed-model-unnamed`` when the adapter pins no model id anywhere. That is not a
+    placeholder for a nicer answer: it truthfully says a managed generator is bound and this
+    repository does not name which model it calls, which is a fact a reviewer should be able to
+    see rather than one a banner should paper over with an invented id.
+    """
+    from importlib import import_module
+
+    module_path, _, class_name = binding.partition(":")
+    try:
+        module = import_module(module_path)
+    except ImportError:  # pragma: no cover - the bound module is importable offline
+        return "managed-model-unavailable"
+    for holder in (module, getattr(module, class_name, None)):
+        for name in _MODEL_CONSTANTS:
+            value = getattr(holder, name, None)
+            if value:
+                return str(value)
+    return "managed-model-unnamed"
+
+
 @dataclass(frozen=True, slots=True)
 class ProfileChoice:
     """The ONE resolution of the profile variable, and what each consumer reads.
@@ -363,6 +405,48 @@ class Settings:
     adapters: Mapping[str, Mapping[str, str]] = field(
         default_factory=lambda: {port: dict(t) for port, t in DEFAULT_BINDINGS.items()}
     )
+
+    @property
+    def runtime(self) -> str:
+        """WHERE this process runs, as the UI banner states it: ``gcp`` or ``local``.
+
+        Derived from the profile, never sniffed from the environment. A console that read its
+        runtime from ``window.location`` would be right until the day the deployment served
+        through a proxy and wrong silently after that, so the service is the party asked.
+
+        ``onprem`` reads ``local`` because that is its entire point, and a managed model call
+        does not make a process cloud-hosted: this states where the PROCESS runs, and
+        :attr:`generator_model` states whose model answers.
+        """
+        return "gcp" if self.profile in _MANAGED_PROFILES else "local"
+
+    @property
+    def generator_model(self) -> str:
+        """WHICH model answers, as the UI banner states it (org decision, 2026-08-30).
+
+        These systems are demonstrated on a laptop and on a deployment, sometimes in the same
+        hour, and a screenshot of one is indistinguishable from the other. A viewer who cannot
+        tell which they are looking at cannot tell whether a figure came from a managed model or
+        a deterministic offline stub, which is exactly the confusion an audit-first pitch cannot
+        afford. So the page states it, always, rather than the presenter stating it sometimes.
+
+        ``no-model`` is deliberately NOT ``deterministic-offline-stub``. The stub string claims a
+        model-shaped port bound to a stub; ``no-model`` says there is no such port at all, and a
+        reviewer approving an escalation is entitled to know which of the two they are reading.
+        """
+        if not _GENERATOR_PORT:
+            return "no-model"
+        table = self.adapters.get(_GENERATOR_PORT) or {}
+        binding = str(table.get(self.profile, "") or "")
+        if not binding:
+            return "no-model"
+        if self.profile not in _MANAGED_PROFILES:
+            # The on-prem adapters are fail-fast migration placeholders: they raise rather than
+            # generating, so naming a model would advertise one that never answers.
+            if self.profile == "onprem":
+                return "onprem-not-implemented"
+            return "deterministic-offline-stub"
+        return _declared_model(binding)
 
     def __post_init__(self) -> None:
         if self.profile not in KNOWN_PROFILES:
