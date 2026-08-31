@@ -238,3 +238,45 @@ def test_the_ui_documents_how_to_remove_itself() -> None:
     assert "make drop-ui" in (UI / "README.md").read_text(encoding="utf-8")
     assert (REPO_ROOT / "scripts" / "drop_ui.py").exists()
     assert "drop-ui:" in (REPO_ROOT / "Makefile").read_text(encoding="utf-8")
+
+
+#: The two documents `next dev` writes into `ui/` when `agentRules` is not turned off. Named here
+#: rather than inline because both halves of the guard below are about the same pair.
+GENERATED_AGENT_DOCUMENTS = ("AGENTS.md", "CLAUDE.md")
+
+
+@requires_ui
+def test_the_dev_server_does_not_write_a_second_working_agreement() -> None:
+    """`next dev` generates `ui/AGENTS.md` and `ui/CLAUDE.md` unless `agentRules` is false.
+
+    Observed on Next 16.3.0 in two repos on the same day: starting the dev server printed
+    ``Generated AGENTS.md and CLAUDE.md for AI agents`` and left both files in `ui/`. Deleting
+    them by hand does not hold, because the next `next dev` writes them again.
+
+    Two things are wrong with them, and only one is cosmetic. The catalog's convention is that
+    `AGENTS.md` is the working agreement and it is the ONLY one, with no tool-specific alias, and
+    this repo already carries its own at the root: `ui/AGENTS.md` is a second working agreement
+    and `ui/CLAUDE.md` is the forbidden alias. The generated prose also carries an em-dash, which
+    `make docs-check` fails on, so the first repo owner to run the dev server inherits a red gate
+    they did not cause.
+
+    The flag is the fix and the first assertion guards it. The second is the one that matters
+    more: a framework bump can rename or drop `agentRules`, and the flag would then be a line
+    nobody reads while the files come back. Asserting the files are ABSENT fails on the artifact
+    rather than on the spelling, so the guard survives the rename that would defeat it. Both are
+    deliberately here in the Python gate rather than in `ui/tests/`, so `make gate`, the command
+    a repo owner runs before committing, is what goes red.
+    """
+    code = _code_only((UI / "next.config.mjs").read_text(encoding="utf-8"))
+    assert "agentRules: false" in code, (
+        "next.config.mjs does not set `agentRules: false`, so `next dev` writes ui/AGENTS.md and "
+        "ui/CLAUDE.md the moment somebody starts it. Confirm the option's current name against "
+        "node_modules/next/dist/server/lib/generate-agent-files.js before changing this line."
+    )
+    present = [name for name in GENERATED_AGENT_DOCUMENTS if (UI / name).exists()]
+    assert not present, (
+        "ui/" + ", ui/".join(present) + " exists. This repo's working agreement is the AGENTS.md "
+        "at its root and there is no tool-specific alias of it, so delete these; if `next dev` "
+        "wrote them, the `agentRules` option in ui/next.config.mjs no longer disables the "
+        "generation and the template needs fixing, not this repo."
+    )
