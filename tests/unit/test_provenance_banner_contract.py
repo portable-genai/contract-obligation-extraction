@@ -103,3 +103,53 @@ def test_the_endpoint_answers_from_settings_rather_than_a_literal() -> None:
     settings = Settings.load(CONFIG_PATH)
     assert settings.runtime in {"gcp", "local"}
     assert settings.generator_model.strip()
+
+
+def test_the_managed_profile_names_a_model_or_says_exactly_why_not() -> None:
+    """No placeholder survives here: every answer is a model id or a stated reason.
+
+    ``managed-model-unnamed`` used to be a real answer in twenty-five trees, and it was the
+    resolver looking in the wrong place rather than the trees being silent -- most of the fleet
+    pins the id in settings under a per-repository field name. It is kept only as a defensive
+    fallback and no tree should reach it.
+    """
+    answer = _for_profile("gcp").generator_model
+    assert answer != "managed-model-unnamed", (
+        "the managed model id is not being resolved from anywhere: set _GENERATOR_MODEL_ATTR "
+        "to the settings path holding it, or declare _MODEL on the bound adapter"
+    )
+    assert answer.strip()
+
+
+def test_not_implemented_is_claimed_only_by_an_adapter_that_never_calls_a_model() -> None:
+    """The one answer that is INFERRED rather than read, so it is the one that can be wrong.
+
+    ``managed-not-implemented`` is reached when a tree names no settings path and its adapter
+    declares no model constant. That is correct for a deployment-wired placeholder, and a LIE
+    for an adapter that generates while declaring nothing.
+
+    The check is "does it call the model API", not "does it raise". Raising was tried first and
+    is too weak: it passed `soc-fraud-fusion`, which generates and also raises on bad input, and
+    it had already let a real mis-classification through -- `conversation-qa-scorecard` calls
+    ``generate_content`` and raises only when its model is unconfigured, and was grouped with
+    the placeholders on the strength of that raise. Its model is named now.
+    """
+    from importlib import import_module
+    from pathlib import Path as _Path
+
+    # The MANAGED profile, not whatever the settings file defaults to. Reading the default
+    # profile here made this test inert: offline it answers `deterministic-offline-stub`, so it
+    # returned before checking anything, and it passed a deliberately broken tree.
+    settings = _for_profile("gcp")
+    if settings.generator_model != "managed-not-implemented":
+        return
+    from contract_obligation_extraction.config import _GENERATOR_PORT
+
+    binding = str((settings.adapters.get(_GENERATOR_PORT) or {}).get("gcp", ""))
+    module = import_module(binding.partition(":")[0])
+    source = _Path(module.__file__ or "").read_text()
+    for call in ("generate_content", ".predict(", ".invoke("):
+        assert call not in source, (
+            f"{binding} reports managed-not-implemented but calls {call!r}: it generates, so "
+            "the model it calls must be named rather than declared absent"
+        )
