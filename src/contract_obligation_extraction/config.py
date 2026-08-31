@@ -100,10 +100,44 @@ _MANAGED_PROFILES: frozenset[str] = frozenset({"gcp"})
 #: Named once here so rebinding it for a profile changes the banner in the same edit.
 _GENERATOR_PORT: str = "generation"
 
+#: Where this service's managed model id lives, as a dotted attribute path on ``Settings``, or
+#: the empty string when it keeps none there.
+#:
+#: Most of the fleet pins the id in its settings file rather than in the adapter, under a name
+#: chosen per repository. Resolving it from a path named ONCE here keeps the banner reading the
+#: same value the adapter passes to the model call, instead of a second copy that drifts.
+_GENERATOR_MODEL_ATTR: str = ""
+
 #: Constant names a managed adapter may declare its model id under. Several spellings because
 #: the fleet uses several, and a resolver that knew only one would report a bound model as
 #: unnamed.
 _MODEL_CONSTANTS: tuple[str, ...] = ("_MODEL", "_DEFAULT_MODEL")
+
+
+def _model_from_settings(settings: object, path: str) -> str:
+    """The model id at ``path``, or ``""`` when the deployment has not pinned one.
+
+    Honours the hard-reasoning opt-in where a repository has one. A deployment that flips
+    ``models.use_hard_reasoning`` sends reasoning-tier calls to the stronger model, so a banner
+    that kept naming ``models.reasoning`` would state a model the service is no longer calling.
+    """
+    models = getattr(settings, "models", None)
+    # Read through getattr into a local rather than touching `models.hard_reasoning` after the
+    # guard: `models` is deliberately untyped here (not every repo has one) so the checker
+    # cannot narrow it, and the attribute access is a real union-attr error.
+    hard_reasoning = getattr(models, "hard_reasoning", "")
+    if (
+        path == "models.reasoning"
+        and getattr(models, "use_hard_reasoning", False)
+        and hard_reasoning
+    ):
+        return str(hard_reasoning)
+    value: object = settings
+    for part in path.split("."):
+        value = getattr(value, part, None)
+        if value is None:
+            return ""
+    return str(value or "")
 
 
 def _declared_model(binding: str) -> str:
@@ -115,10 +149,9 @@ def _declared_model(binding: str) -> str:
     no cloud SDK installed -- every cloud import in these adapters lives inside the method that
     needs it, which is the portability property the parity suite already asserts.
 
-    Returns ``managed-model-unnamed`` when the adapter pins no model id anywhere. That is not a
-    placeholder for a nicer answer: it truthfully says a managed generator is bound and this
-    repository does not name which model it calls, which is a fact a reviewer should be able to
-    see rather than one a banner should paper over with an invented id.
+    Returns ``""`` when the adapter declares no model constant, which is the common case: most
+    of the fleet pins the id in settings instead, and :attr:`Settings.generator_model` reads
+    that first. An empty answer here is "not declared on the adapter", never "no model".
     """
     from importlib import import_module
 
@@ -132,7 +165,7 @@ def _declared_model(binding: str) -> str:
             value = getattr(holder, name, None)
             if value:
                 return str(value)
-    return "managed-model-unnamed"
+    return ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -446,7 +479,22 @@ class Settings:
             if self.profile == "onprem":
                 return "onprem-not-implemented"
             return "deterministic-offline-stub"
-        return _declared_model(binding)
+        # Managed. The id lives in settings in most of the fleet and on the adapter in a few,
+        # so both are read here and the banner never names a model the binding does not use.
+        if _GENERATOR_MODEL_ATTR:
+            named = _model_from_settings(self, _GENERATOR_MODEL_ATTR)
+            if named:
+                return named
+            # The field exists and this deployment has not pinned a model. Saying so is
+            # actionable; naming a default would advertise one the deployment never calls.
+            return "managed-model-unset"
+        declared = _declared_model(binding)
+        if declared:
+            return declared
+        # Neither a settings field nor an adapter constant. This managed path is a
+        # deployment-wired placeholder that raises rather than generating, so there is no model
+        # to name -- which is a different statement from one that exists and is unset.
+        return "managed-not-implemented"
 
     def __post_init__(self) -> None:
         if self.profile not in KNOWN_PROFILES:
