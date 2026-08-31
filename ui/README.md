@@ -123,6 +123,13 @@ The refusals for the two allowlists run from `next.config.mjs`, which `next buil
 `next start` both evaluate, so a UI whose allowlist rendered empty never comes up at all. A
 refusal at boot is the one outcome a two-state read cannot imitate.
 
+`next.config.mjs` also sets `agentRules: false`. Left at its default, `next dev` detects an AI
+coding agent and writes `AGENTS.md` and `CLAUDE.md` into this directory. This repo's working
+agreement is the `AGENTS.md` at its root and there is no tool-specific alias of it, so a second
+one here is a second agreement to keep in step; the generated prose also carries an em-dash,
+which `make docs-check` fails on. If either file ever turns up in `ui/` anyway, the offline gate
+fails on it: the flag has stopped working, which is a template fix rather than a repo one.
+
 `proxy.ts` applies the header baseline to every response, including the error ones, from the same
 policy module the API route uses for CORS. One policy, three consumers: a header set in two places
 is a header that disagrees with itself.
