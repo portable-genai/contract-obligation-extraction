@@ -66,14 +66,6 @@ def main(argv: list[str] | None = None) -> int:
     else:
         unchanged.append("ui/ was already absent")
 
-    workflow = REPO_ROOT / ".github" / "workflows" / "ui-gate.yaml"
-    if workflow.exists():
-        changes.append("removed .github/workflows/ui-gate.yaml")
-        if not args.dry_run:
-            workflow.unlink()
-    else:
-        unchanged.append("the ui-gate workflow was already absent")
-
     dependabot = REPO_ROOT / ".github" / "dependabot.yml"
     text = dependabot.read_text(encoding="utf-8")
     if _NPM_DIRECTORY in text:

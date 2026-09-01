@@ -44,8 +44,9 @@ ruff check src tests && ruff format --check src tests && mypy src && \
 ```
 
 The demo surface sits OUTSIDE that gate, because the gate proves the service and the demo proves
-the story it is presented with. It is enforced by its own required check
-(`.github/workflows/demo-gate.yaml`), so it cannot rot quietly:
+the story it is presented with. It is enforced inside the offline gate by
+`tests/unit/test_demo_surface.py`, which the hosted Cloud Build check runs, so it cannot rot
+quietly:
 
 ```bash
 make demo             # the presenter-paced walkthrough (see DEMO.md)
