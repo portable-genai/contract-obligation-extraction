@@ -31,7 +31,6 @@ from tests import REPO_ROOT
 
 UI = REPO_ROOT / "ui"
 DEPENDABOT = REPO_ROOT / ".github" / "dependabot.yml"
-UI_WORKFLOW = REPO_ROOT / ".github" / "workflows" / "ui-gate.yaml"
 
 #: True when this repo carries a UI at all. Everything below branches on it rather than skipping,
 #: because "no UI" has its own required posture.
@@ -63,14 +62,6 @@ def test_the_ui_dependabot_ecosystem_matches_reality() -> None:
     )
 
 
-def test_the_ui_ci_job_matches_reality() -> None:
-    assert UI_WORKFLOW.exists() == HAS_UI, (
-        "ui/ is present but no ui-gate workflow builds it"
-        if HAS_UI
-        else "the ui-gate workflow survived the removal of ui/. Run `make drop-ui`."
-    )
-
-
 @requires_ui
 def test_the_ui_ships_a_lockfile_and_pins_every_version_exactly() -> None:
     """`npm ci` is only reproducible if the lock is committed and the manifest has no ranges."""
@@ -79,14 +70,6 @@ def test_the_ui_ships_a_lockfile_and_pins_every_version_exactly() -> None:
     for section in ("dependencies", "devDependencies"):
         for name, version in manifest.get(section, {}).items():
             assert version[0].isdigit(), name + " is not pinned exactly: " + version
-
-
-@requires_ui
-def test_the_ui_gate_installs_from_the_lock_and_fails_on_a_high_advisory() -> None:
-    workflow = UI_WORKFLOW.read_text(encoding="utf-8")
-    assert "npm ci" in workflow, "the UI job must install from the lockfile, not resolve afresh"
-    assert "npm audit --audit-level=high" in workflow, "an npm advisory that only prints is unread"
-    assert "run build" in workflow, "a UI that type-checks but does not build is not shipped"
 
 
 @requires_ui

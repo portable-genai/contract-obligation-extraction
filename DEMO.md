@@ -42,8 +42,9 @@ make demo-static      # demo.json plus out/index.html and out/step-*.html, for s
 make portability      # the executable portability claim: named checks, pass or fail each
 ```
 
-`make demo-selftest` runs in CI on every push (`.github/workflows/demo-gate.yaml`), so the demo
-cannot rot silently between showings. `scripts/README.md` documents each script and the
+`tests/unit/test_demo_surface.py` drives the whole arc inside the offline gate, and the
+hosted Cloud Build check runs that gate on every pull request and every push to main, so the
+demo cannot rot silently between showings. `scripts/README.md` documents each script and the
 environment overrides.
 
 ## The claims, and their bounds

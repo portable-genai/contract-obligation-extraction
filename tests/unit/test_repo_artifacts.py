@@ -41,9 +41,6 @@ REQUIRED_ARTIFACTS: dict[str, str] = {
     ".env.example": "the non-secret environment, reviewable and diffable",
     ".env.secrets.example": "secret NAMES with placeholder values, never real ones",
     ".github/dependabot.yml": "an ecosystem nobody watches is an unpinned dependency",
-    ".github/workflows/ci.yaml": "the gate has to run somewhere",
-    ".github/workflows/eval-gate.yaml": "an eval regression must block a merge on its own name",
-    ".github/workflows/demo-gate.yaml": "a demo nobody runs unattended is a demo that has rotted",
     "scripts/README.md": "the demo surface needs an index, or nobody finds the entry point",
     "scripts/demo.py": "the demo is code, not a deck",
     "scripts/demo_server.py": "the live, click-through demo",
@@ -96,42 +93,11 @@ def test_the_image_installs_from_the_lockfile_not_a_fresh_resolve() -> None:
     assert "pip install --no-deps ." in dockerfile, "--no-deps keeps the lock authoritative"
 
 
-def test_ci_installs_from_the_lockfiles_and_pins_the_shared_workflow() -> None:
-    ci = (REPO_ROOT / ".github" / "workflows" / "ci.yaml").read_text(encoding="utf-8")
-    assert 'dev-lockfile: "requirements-dev.lock"' in ci
-    assert 'runtime-lockfile: "requirements-gcp.lock"' in ci
-    # A branch ref would silently change what this repo's gate means between two runs.
-    assert "hard-gate.yaml@v" in ci, "the shared workflow must be pinned to a TAG"
-
-
-def test_ci_names_an_iap_negative_matrix_that_actually_exists() -> None:
-    """The one adapter whose declaration stands the exposure guard down must have a job.
-
-    That adapter needs google-auth, which is deliberately absent from the dev lockfile, so its
-    negative matrix cannot run in the offline gate and would SKIP there. `iap-matrix-path` in
-    `ci.yaml` is what gives it a job with the runtime lockfile installed and the require-flag on.
-    Two ways that decays silently: the input is dropped, or it names a module that was renamed or
-    deleted, in which case the job runs `pytest` on nothing and reports green. Both fail here.
-    """
-    ci = (REPO_ROOT / ".github" / "workflows" / "ci.yaml").read_text(encoding="utf-8")
-    named = [
-        line.split(":", 1)[1].strip().strip('"')
-        for line in ci.splitlines()
-        if line.strip().startswith("iap-matrix-path:")
-    ]
-    assert named, (
-        "ci.yaml passes no iap-matrix-path, so the IAP verifier's negative matrix has no job "
-        "that installs google-auth and it skips everywhere"
-    )
-    for path in named:
-        assert (REPO_ROOT / path).is_file(), (
-            f"ci.yaml names {path}, which does not exist; the job would pass over nothing"
-        )
-
-
 def test_dependabot_covers_every_ecosystem_the_repo_actually_has() -> None:
     config = (REPO_ROOT / ".github" / "dependabot.yml").read_text(encoding="utf-8")
-    for ecosystem in ("pip", "docker", "github-actions"):
+    # github-actions is absent deliberately: the workflows it would pin were retired as
+    # unrunnable, so there is no action version left to hold still.
+    for ecosystem in ("pip", "docker"):
         assert f"package-ecosystem: {ecosystem}" in config, f"{ecosystem} is unwatched"
     if (REPO_ROOT / "ui" / "package.json").exists():
         assert "package-ecosystem: npm" in config, "ui/ exists, so npm must be watched"
