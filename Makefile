@@ -72,8 +72,8 @@ run-api:
 # --------------------------------------------------------------------------------------- #
 # The demo surface. Deliberately OUTSIDE `make gate`: the gate proves the service and must stay
 # fast and offline, while these prove the story the service is presented with. They are still
-# enforced, by the demo-gate workflow on every push and by tests/unit/test_demo_surface.py in
-# the offline gate. See scripts/README.md.
+# enforced, by the hosted Cloud Build check on every pull request and push to main, and by
+# tests/unit/test_demo_surface.py in the offline gate. See scripts/README.md.
 # --------------------------------------------------------------------------------------- #
 
 # Presenter-paced: starts its own loopback server, opens the page, narrates on THIS terminal and

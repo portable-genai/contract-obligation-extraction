@@ -6,7 +6,8 @@ demo makes: the service works with none of those, so anybody can run it from a c
 
 None of these scripts is part of `make gate`. The gate proves the service; these prove the story
 the service is presented with, which is a different job and a different failure mode. They are
-still enforced, though: `make demo-selftest` and `make portability` run in CI on every push, and
+still enforced, though: the hosted Cloud Build check runs `make demo-selftest` and
+`make portability` on every pull request and every push to main, and
 `tests/unit/test_demo_surface.py` fails the offline gate if a script is deleted, stops importing,
 or stops being listed here.
 
@@ -61,8 +62,9 @@ able to run everywhere.
 - **Synthetic, obviously fictional data only.** Fictional parties, `.example` domains, RFC 5737
   and RFC 3849 literals. The one national id in the fixtures exists solely so a redaction check
   has an independent literal to look for.
-- **Nothing is faked.** No stub service and no pre-baked output. If the demo shows a decision,
-  the shipped code produced it in that process.
+- **Nothing is faked.** No stub of the engine and no pre-baked output. If the demo shows a
+  decision, the shipped code produced it in that process. The one stub is the offline model
+  adapter, which decides nothing and carries the word stub in its own model id.
 - **Every claim is bounded.** Each script says what it does not prove. An unbounded claim is the
   one an auditor disproves for you.
 - **Bad news is shown.** The tamper step exists to display a failure, and the walkthrough exits
