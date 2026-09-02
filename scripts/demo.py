@@ -7,7 +7,7 @@ rather than stops being mentioned.
 
 Three properties make it worth running in front of somebody:
 
-* **Nothing is faked.** No stub service, no pre-baked JSON. The severity bands, the audit
+* **Nothing is faked.** No engine stub, no pre-baked JSON. The severity bands, the audit
   records, the routing references and the tamper verdict are produced by the shipped code.
 * **It is bounded.** The demo proves an offline, single-process seam. It does not prove
   cross-host deployment, a live console, or the managed profile; those need a cloud project and
