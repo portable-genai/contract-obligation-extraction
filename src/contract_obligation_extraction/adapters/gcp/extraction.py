@@ -19,8 +19,9 @@ class CloudExtractionAdapter:
     """Read a contract through Document AI and a managed long-context model."""
 
     #: A long-context model: contracts run to tens of thousands of tokens and the read is
-    #: single-shot per document.
-    _MODEL = "gemini-3.5-pro"
+    #: single-shot per document. No Gemini 3 PRO tier is served in any location, so this is the
+    #: same in-region model the narration adapter pins.
+    _MODEL = "gemini-3.5-flash"
 
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
