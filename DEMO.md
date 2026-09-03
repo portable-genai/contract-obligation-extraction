@@ -43,7 +43,7 @@ make portability      # the executable portability claim: named checks, pass or 
 ```
 
 `tests/unit/test_demo_surface.py` drives the whole arc inside the offline gate, and the
-hosted Cloud Build check runs that gate on every pull request and every push to main, so the
+hosted GitHub Actions check runs that gate on every pull request and every push to main, so the
 demo cannot rot silently between showings. `scripts/README.md` documents each script and the
 environment overrides.
 

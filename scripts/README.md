@@ -6,7 +6,7 @@ demo makes: the service works with none of those, so anybody can run it from a c
 
 None of these scripts is part of `make gate`. The gate proves the service; these prove the story
 the service is presented with, which is a different job and a different failure mode. They are
-still enforced, though: the hosted Cloud Build check runs `make demo-selftest` and
+still enforced, though: the hosted GitHub Actions check runs `make demo-selftest` and
 `make portability` on every pull request and every push to main, and
 `tests/unit/test_demo_surface.py` fails the offline gate if a script is deleted, stops importing,
 or stops being listed here.
