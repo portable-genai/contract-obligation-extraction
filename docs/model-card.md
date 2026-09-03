@@ -17,7 +17,7 @@ code admits and computes.
   is routed to a human rather than defaulted.
 - **State today: not implemented.** `adapters/gcp/extraction.py` performs its lazy SDK imports and
   then RAISES `NotImplementedError`, because the Document AI processor id, the layout
-  configuration and the model endpoint are per-deployment. It names `gemini-3.5-pro` as the
+  configuration and the model endpoint are per-deployment. It names `gemini-3.5-flash` as the
   intended long-context model in `_MODEL`, but nothing calls it. **The managed document path has
   never run.**
 - Offline, `adapters/local/extraction.py` replays the canned proposals the corpus carries for a
@@ -44,7 +44,7 @@ code admits and computes.
 | Profile | Extraction | Narration |
 |---|---|---|
 | `local` | `adapters/local/extraction.py`: replays the corpus's canned proposals. No model, no network. | `adapters/local/generation.py`: restates the engine facts as a deterministic note. Grounded by construction. |
-| `gcp` | `adapters/gcp/extraction.py`: lazy Document AI plus `google.generativeai` imports, then RAISES. Intended model `gemini-3.5-pro`. | `adapters/gcp/generation.py`: a real Gemini call, model pinned in the class as `_MODEL`, currently `gemini-3.5-flash`. |
+| `gcp` | `adapters/gcp/extraction.py`: lazy Document AI plus `google.generativeai` imports, then RAISES. Intended model `gemini-3.5-flash`. | `adapters/gcp/generation.py`: a real Gemini call, model pinned in the class as `_MODEL`, currently `gemini-3.5-flash`. |
 | `onprem` | fail-fast placeholder: raises, naming what the client must bind. | fail-fast placeholder: raises, naming the client's model gateway. |
 
 Both managed model ids are defaults written into the adapters, not confirmed deployment
