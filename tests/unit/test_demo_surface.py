@@ -1,7 +1,7 @@
 """The demo surface, asserted from inside the offline gate.
 
 A demo that is only ever run by hand before a meeting is a demo that breaks in the meeting. The
-hosted Cloud Build check runs the real walkthrough headless (``make demo-selftest``) on every
+hosted GitHub Actions check runs the real walkthrough headless (``make demo-selftest``) on every
 pull request and push to main; this module is the cheaper half that runs in ``make gate``, so a
 broken demo fails the same command a developer already runs before committing.
 
