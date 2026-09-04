@@ -1,4 +1,4 @@
-# Contract Obligation Extraction (Rgc12) serving image.
+# Contract Obligation Extraction (contract-obligation-extraction) serving image.
 #
 # Supply-chain hardening (practices checks D1/D2/D4): the base image is DIGEST-pinned so a
 # re-pushed tag cannot change what ships, dependencies come from the committed lockfile rather

@@ -24,9 +24,6 @@ Two notes specific to this repo:
   ``infra/terraform/render.tf.json``, so the Terraform stack sets the same variable names on
   the Cloud Run service. Both are rewritten.
 
-The catalog id (``Rgc12``) is left alone unless ``--catalog-id`` is given: it names the entry in
-the upstream catalog that this fork descends from, and a fork that keeps it stays traceable.
-Change it when the fork publishes its own agent card to its own registry.
 
 After running: recreate the venv and ``pip install -e ".[dev]"`` (the distribution name
 changed), then run the gate. See docs/ADOPTING.md for the checklist of human decisions (rule
@@ -49,7 +46,6 @@ _OLD_ENV_PREFIX = "CONTRACT_"
 _OLD_BARE_PREFIX = "CONTRACT"
 _OLD_RESOURCE = "rgc12-svc"
 _OLD_DIST = "contract-obligation-extraction"
-_OLD_CATALOG_ID = "Rgc12"
 
 # Directories never touched.
 _SKIP_DIRS = {
@@ -129,8 +125,6 @@ def _rewrite_text(text: str, args: argparse.Namespace) -> tuple[str, int]:
         (_OLD_RESOURCE, args.resource),
         (_OLD_PACKAGE, args.package),
     ]
-    if args.catalog_id:
-        plain.append((_OLD_CATALOG_ID, args.catalog_id))
     for old, new in plain:
         count += text.count(old)
         text = text.replace(old, new)
@@ -161,11 +155,6 @@ def main() -> int:
         help="new cloud resource stem (Terraform name_prefix), e.g. acme-contracts",
     )
     ap.add_argument("--dist", default="", help="new distribution / git id (default: --resource)")
-    ap.add_argument(
-        "--catalog-id",
-        default="",
-        help=f"new catalog id (default: keep {_OLD_CATALOG_ID}, so the fork stays traceable)",
-    )
     ap.add_argument("--include-docs", action="store_true", help="also rewrite Markdown prose")
     ap.add_argument("--dry-run", action="store_true", help="print the plan, write nothing")
     ap.add_argument("--yes", action="store_true", help="apply without the confirmation prompt")
@@ -192,10 +181,6 @@ def main() -> int:
     print(
         f"  {_OLD_ENV_PREFIX!r:34} -> {args.env_prefix.rstrip('_').upper() + '_'!r}   (env prefix)"
     )
-    if args.catalog_id:
-        print(f"  {_OLD_CATALOG_ID!r:34} -> {args.catalog_id!r}   (catalog id)")
-    else:
-        print(f"  {_OLD_CATALOG_ID!r:34} -> unchanged (pass --catalog-id to rewrite it)")
     print()
 
     touched: list[tuple[Path, int]] = []

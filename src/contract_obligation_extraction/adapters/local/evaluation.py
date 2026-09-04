@@ -5,7 +5,8 @@ runs on every merge, with no credentials and no network. ``gate`` does NOT, and 
 from it would be the worst defect this file could carry, because a promotion certified by a
 process running on a laptop with no quality service is a promotion certified by nothing.
 
-The authority is Hrz4. Offline, there is no authority, so the honest answer is a refusal.
+The authority is model-quality-gate. Offline, there is no authority, so the honest answer is a
+refusal.
 """
 
 from __future__ import annotations
@@ -34,7 +35,8 @@ class LocalOfflineEvalAdapter:
 
     def gate(self, target: str) -> bool:
         raise NotImplementedError(
-            "the local profile has no promotion authority. Promotion is Hrz4's decision and "
+            "the local profile has no promotion authority. Promotion is model-quality-gate's "
+            "decision and "
             "needs a deployed profile; run `python eval/run_eval.py --mode smoke` for the "
             "offline pre-merge check."
         )

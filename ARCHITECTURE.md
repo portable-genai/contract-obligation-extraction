@@ -1,4 +1,4 @@
-# ARCHITECTURE: Contract Obligation Extraction (Rgc12)
+# ARCHITECTURE: Contract Obligation Extraction (`contract-obligation-extraction`)
 
 Hexagonal ports-and-adapters. A pure-stdlib domain core speaks only to ports (`typing.Protocol`s);
 adapter families implement them; one env var (`CONTRACT_PROFILE`) swaps the
@@ -59,7 +59,7 @@ behavioural suites cannot quietly assert different things.
 
 ## Request pipeline (`TriageService.triage`, then the caller)
 redact-before-audit (P-04) -> deterministic severity band -> soft escalation (P-06) -> already
-redacted WORM audit write -> **route the escalation to Hrz7 (R8)**. The audit actor and the
+redacted WORM audit write -> **route the escalation to `human-review-console` (R8)**. The audit actor and the
 review maker are both the verified `Principal`, never the request body. Routing happens in the
 same request that produced the result, on the API and CLI surfaces alike, so an escalation never
 depends on a later job that may not exist.
@@ -69,7 +69,7 @@ depends on a later job that may not exist.
 |---|---|---|---|
 | `AuditSinkPort` | hash-chained SQLite WORM (commons) | Cloud Logging WORM (lazy) | placeholder |
 | `IdentityPort` | seeded personas (commons) | IAP assertion (lazy) | placeholder |
-| `ReviewRouterPort` | review-kit outbox (offline, inspectable) | Hrz7 service intake over S2S | placeholder |
+| `ReviewRouterPort` | review-kit outbox (offline, inspectable) | `human-review-console` service intake over S2S | placeholder |
 
 The on-prem placeholders RAISE. A review router that silently returned would convert every
 consequential result into an unreviewed one, which is worse than a missing feature.

@@ -1,4 +1,4 @@
-# SPEC: Contract Obligation Extraction (Rgc12)
+# SPEC: Contract Obligation Extraction (`contract-obligation-extraction`)
 
 Locked decisions, pinned stack, contracts. This document is the deepest authority on intent.
 
@@ -22,7 +22,7 @@ Locked decisions, pinned stack, contracts. This document is the deepest authorit
 - **Determinism**: the severity band and escalation decision are pure stdlib and replayable; an
   LLM may narrate but never produces the band.
 - **Maker-checker (P-06) and routing (R8)**: a HIGH/CRITICAL result sets
-  `requires_human_review=True` AND is routed through `ReviewRouterPort` to the Hrz7 console in the
+  `requires_human_review=True` AND is routed through `ReviewRouterPort` to the `human-review-console` in the
   same request. The flag alone is not the escalation. The response carries `review_ref`, so a
   caller can tell a routed escalation from one that stopped here. The managed adapter refuses to
   run with no console configured rather than swallowing the escalation.
@@ -66,20 +66,20 @@ Locked decisions, pinned stack, contracts. This document is the deepest authorit
   resolved server-side and the resolved headers are attached afterwards. The service credential
   is read from the server environment only. Framing and CORS are allowlists that refuse a
   wildcard however it is written, and an empty allowlist denies rather than opening up.
-- **Eval**: `--mode smoke` is the offline pre-merge check; `--mode gate` is the Hrz4 promotion
+- **Eval**: `--mode smoke` is the offline pre-merge check; `--mode gate` is the `model-quality-gate` promotion
   authority. The gate fails closed.
 - **Tests**: split into `unit`, `contract` and `integration`. The offline gate runs the first
   two; every integration module is marked, and that marking is itself enforced.
 
 ## Vertical: the contract obligation register
-Rgc12 reads an executed or draft contract (MSA, SOW, DPA, outsourcing agreement, ISDA) into a
+`contract-obligation-extraction` reads an executed or draft contract (MSA, SOW, DPA, outsourcing agreement, ISDA) into a
 tracked, owner-assigned, deadline-bearing register of obligations, key clauses, dates and risk
 flags, each linked to its source clause. The consequential computation is pure code; the model
 only proposes and narrates.
 
 - **Shared engine, contractual corpus**: the obligation model, admission (dedup on a content key),
   versioned effective-dated snapshots and the coverage/deadline primitives come from
-  `obligation-register-kit`, pinned by the SAME tag that Rgc7 pins. This repo applies the kernel's
+  `obligation-register-kit`, pinned by the SAME tag that `obligations-control-mapping` pins. This repo applies the kernel's
   admission rules to a contractual corpus rather than a regulatory one; it never vendors the
   kernel.
 - **Clause segmentation is the linkage**: `domain/clauses.py` splits a contract at numbered-heading
@@ -99,13 +99,13 @@ only proposes and narrates.
 - **The renewal clock** (`domain/renewals.py`) is pure date maths with an explicit `as_of`: a
   renewal or termination right is actioned a NOTICE PERIOD before its due date, so an obligation
   can be inside its action window before it is "due soon"; a past due date is a breach. A breached
-  deadline is consequential and routes to Hrz7.
+  deadline is consequential and routes to `human-review-console`.
 - **Severity and escalation are pure code**: the band is the worst admitted flag severity, lifted
   to HIGH on any breach; a register carrying any material finding sets `requires_human_review` and
-  routes to Hrz7 (R8). The model narrates the register summary and the note is discarded unless it
+  routes to `human-review-console` (R8). The model narrates the register summary and the note is discarded unless it
   validates and every figure in it is one the engine produced.
-- **The Rgc8 feed** is versioned from day one: `register_envelope` wraps the register snapshot in
-  the kernel's schema envelope (`schema_version`, `kind`, `payload`). Rgc8 consumes it;
+- **The `third-party-risk-ddq` feed** is versioned from day one: `register_envelope` wraps the register snapshot in
+  the kernel's schema envelope (`schema_version`, `kind`, `payload`). `third-party-risk-ddq` consumes it;
   until it exists the shape is a recorded PROPOSAL frozen by a contract test, not an agreement. See
   `docs/rgc8-feed.md`.
 - **Cross-tenant**: a contract is tenant-owned; the read is authorised against the VERIFIED

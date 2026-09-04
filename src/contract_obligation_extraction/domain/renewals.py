@@ -9,8 +9,9 @@ itself is not "due soon". Everything here is a pure function of the deadline, th
 and the reference date, so a deadline register replays identically and a breached deadline is a
 fact the engine computes, never one the model asserts.
 
-A breached (overdue) deadline is consequential: the caller sets ``requires_human_review`` and
-routes it to Hrz7, because a missed renewal notice can auto-renew a contract a firm meant to exit.
+A breached (overdue) deadline is consequential: the caller sets ``requires_human_review`` and routes
+it to human-review-console, because a missed renewal notice can auto-renew a contract a firm meant
+to exit.
 """
 
 from __future__ import annotations

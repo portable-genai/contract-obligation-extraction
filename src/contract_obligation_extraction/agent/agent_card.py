@@ -1,9 +1,9 @@
 """The A2A discovery card: what this agent can be asked to do, in one machine-readable place.
 
-Served at ``/.well-known/agent-card.json`` and registrable with Hrz3 (rule R4). The card is
-built from the SAME tool table the runtime binds, so an agent cannot advertise a skill it does
-not implement or implement one it never advertises; ``tests/unit/test_agent_surface.py`` fails
-the build when the two disagree.
+Served at ``/.well-known/agent-card.json`` and registrable with agent-registry (rule R4). The card
+is built from the SAME tool table the runtime binds, so an agent cannot advertise a skill it does
+not implement or implement one it never advertises; ``tests/unit/test_agent_surface.py`` fails the
+build when the two disagree.
 
 Pure: domain types and stdlib only, no ADK and no cloud SDK, so the card can be generated and
 inspected offline.
@@ -80,7 +80,7 @@ SKILLS: tuple[AgentSkill, ...] = (
 _DESCRIPTION = " ".join(
     (
         "Contract Obligation Extraction",
-        "(Rgc12).",
+        "(contract-obligation-extraction).",
         "Deterministic decision, cited output, redact-before-audit, and every",
         "consequential result routed to a human reviewer.",
     )

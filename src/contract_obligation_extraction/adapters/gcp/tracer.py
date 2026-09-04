@@ -1,14 +1,14 @@
 """Managed ObservabilityTracerPort: OpenTelemetry, built by the commons.
 
-This adapter is deliberately thin. All the OpenTelemetry work lives in
-``hex_service_kit.tracing`` (the ``otel`` extra), so the exporter choice, the Cloud Run
-authentication the Hrz5 collector requires, and the rule that a tracing fault never becomes a
-request fault are implemented once for the whole fleet rather than per repo.
+This adapter is deliberately thin. All the OpenTelemetry work lives in ``hex_service_kit.tracing``
+(the ``otel`` extra), so the exporter choice, the Cloud Run authentication the agent-observability
+collector requires, and the rule that a tracing fault never becomes a request fault are implemented
+once for the whole fleet rather than per repo.
 
 Where spans go is a DEPLOYMENT fact, not a code fact, and it is read from
-``OTEL_EXPORTER_OTLP_ENDPOINT``: set, they go OTLP to the Hrz5 collector, which redacts and
-aggregates; unset, straight to Cloud Trace. Both are supported, so this is one adapter and not two
-profiles.
+``OTEL_EXPORTER_OTLP_ENDPOINT``: set, they go OTLP to the agent-observability collector, which
+redacts and aggregates; unset, straight to Cloud Trace. Both are supported, so this is one adapter
+and not two profiles.
 
 The commons import is lazy for the usual reason (practice A5): the local and on-prem profiles
 import this package with no cloud SDK installed, and ``hex_service_kit.tracing`` itself imports

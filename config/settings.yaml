@@ -1,4 +1,4 @@
-# Contract Obligation Extraction (Rgc12) runtime configuration.
+# Contract Obligation Extraction (contract-obligation-extraction) runtime configuration.
 #
 # Loaded by `src/contract_obligation_extraction/config.py`. Point at a different file with
 # CONTRACT_SETTINGS; a path that is named but missing is a boot error, not
@@ -66,7 +66,7 @@ adapters:
     onprem: contract_obligation_extraction.adapters.onprem.review_router:OnPremReviewRouter
 
   # Tracing. Which BACKEND a deployed profile exports to is not a binding: the gcp
-  # adapter reads OTEL_EXPORTER_OTLP_ENDPOINT and sends OTLP to the Hrz5 collector when it
+  # adapter reads OTEL_EXPORTER_OTLP_ENDPOINT and sends OTLP to the agent-observability collector when it
   # is set, straight to Cloud Trace when it is not. Tracing is not essential to
   # correctness, so onprem is ABSENT rather than fatal, unlike the other placeholders.
   tracer:
@@ -74,7 +74,7 @@ adapters:
     gcp: contract_obligation_extraction.adapters.gcp.tracer:CloudTracerAdapter
     onprem: contract_obligation_extraction.adapters.onprem.tracer:OnPremTracerAdapter
 
-  # The promotion authority (Hrz4). The local adapter scores offline but REFUSES to
+  # The promotion authority (model-quality-gate). The local adapter scores offline but REFUSES to
   # promote: a promotion certified by a laptop with no quality service is certified by
   # nothing.
   evaluation:

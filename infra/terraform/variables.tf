@@ -247,7 +247,7 @@ variable "alert_notification_channels" {
 
 variable "human_review_url" {
   description = <<-EOT
-    The Hrz7 human-review console the managed review router submits escalations to
+    The human-review-console the managed review router submits escalations to
     (HUMAN_REVIEW_URL). Rule R8 says an escalation is ROUTED and never merely flagged,
     and the managed router refuses rather than swallowing one when this is empty, so the
     serving edge requires it: a deploy that would ship R8 unwired fails here instead of at
@@ -269,7 +269,7 @@ variable "human_review_url" {
 
 variable "quality_service_url" {
   description = <<-EOT
-    The Hrz4 AI-quality service that owns the promotion verdict (rule R5); it becomes the
+    The model-quality-gate AI-quality service that owns the promotion verdict (rule R5); it becomes the
     <PREFIX>_QUALITY_URL variable the evaluation port reads. Empty leaves the variable unset,
     so the application takes its documented default. Never set it to an empty string on the
     service: the eval adapter treats SET-AND-EMPTY as naming no promotion authority at all,
@@ -282,7 +282,7 @@ variable "quality_service_url" {
 variable "otlp_endpoint" {
   description = <<-EOT
     OpenTelemetry collector endpoint (OTEL_EXPORTER_OTLP_ENDPOINT, rule R2). Set it to the
-    Hrz5 collector to send spans there; leave it empty and the tracer exports straight to
+    agent-observability collector to send spans there; leave it empty and the tracer exports straight to
     Cloud Trace. Empty means the variable is not set on the service at all.
   EOT
   type        = string
@@ -315,7 +315,7 @@ variable "additional_secret_env" {
   description = <<-EOT
     Environment variable name to an immutable existing Secret Manager secret version,
     mounted on the API service. This is how the inbound service credential
-    (<PREFIX>_S2S_TOKEN) and the outbound Hrz7 credentials (HUMAN_REVIEW_S2S_TOKEN,
+    (<PREFIX>_S2S_TOKEN) and the outbound human-review-console credentials (HUMAN_REVIEW_S2S_TOKEN,
     HUMAN_REVIEW_S2S_SIGNING_KEY) reach the process: no secret value is ever written into this
     configuration. Names this stack sets itself are reserved (naming.tf), so a secret cannot
     silently shadow the residency, identity or routing wiring.

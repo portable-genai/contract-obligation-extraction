@@ -132,7 +132,6 @@ def test_the_static_renderer_produces_a_self_contained_page() -> None:
 def test_the_renderer_escapes_content_rather_than_interpolating_it() -> None:
     state = {
         "service": "<img src=x onerror=alert(1)>",
-        "catalog_id": "X1",
         "repository": "r",
         "profile": "local",
         "region": "r",

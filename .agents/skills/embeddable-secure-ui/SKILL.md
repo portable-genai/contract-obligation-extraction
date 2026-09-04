@@ -37,7 +37,7 @@ implicit parts of this baseline.
 - **Isolation/transport:** **same-origin reverse-proxy** (serve the agent under the parent
   origin, e.g. `portal.client.com/agent/*`) so the iframe is first-party (no third-party-cookie
   problem, no CORS), plus a **standalone** deployment when there is no host app.
-- **PEP:** defense-in-depth (edge IAP/Apigee -> Hrz1 guardrail -> per-backend re-validation).
+- **PEP:** defense-in-depth (edge IAP/Apigee -> `agent-guardrail-gateway` -> per-backend re-validation).
 - **Local mode runs with NO auth** (seeded dev personas) so demos and tests stay offline and
   SDK-free, exactly like the rest of the catalog. Because it is the permissive posture, it is
   entered only by NAMING it: an unset profile variable gets the offline adapters and none of the
@@ -297,8 +297,8 @@ from off the loopback interface. Then move to the next repo (the scaffold is uni
 mechanical: see `vertical-slice-delivery`).
 
 ## Out of scope for this slice (next hardening layer, document it)
-Per-hop OAuth2 token-exchange (OBO) + Workload Identity + mTLS to Hrz1/Hrz2/Hrz5/Hrz3; DPoP /
-step-up (acr/amr) for high-value actions; Hrz2 KB tenant-partition + fail-closed ACL; SSRF
+Per-hop OAuth2 token-exchange (OBO) + Workload Identity + mTLS to `agent-guardrail-gateway`, `enterprise-knowledge-base`, `agent-observability`, `agent-registry`; DPoP /
+step-up (acr/amr) for high-value actions; `enterprise-knowledge-base` tenant-partition + fail-closed ACL; SSRF
 egress controls on any fetch-at-runtime pipeline; Trusted Types on the bundles.
 
 **Docs style:** no em-dashes in `.md` or `.html` files, commit messages, or PR bodies. See

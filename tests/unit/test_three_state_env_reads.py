@@ -74,7 +74,8 @@ SCANNED_ROOTS: tuple[str, ...] = ("src", "scripts", "eval")
 #: not belong here and the read belongs in ``read_env_setting``.
 TWO_STATE_READS_WITH_A_REASON: dict[str, str] = {
     "CONTRACT_QUALITY_URL": (
-        "eval/run_eval.py --mode gate: the Hrz4 promotion authority to ASK. Reaching a wrong or "
+        "eval/run_eval.py --mode gate: the model-quality-gate promotion authority to ASK. Reaching "
+        "a wrong or "
         "absent authority fails the gate; it cannot pass one. The mode itself already refuses "
         "to run off the managed profile."
     ),

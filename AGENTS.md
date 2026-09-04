@@ -7,7 +7,7 @@ here. Read it first. This file carries only what is specific to this one.
 
 ## What this is
 
-Contract Obligation Extraction (Rgc12): Structured register of obligations, key clauses, dates and risk flags extracted from contracts.
+Contract Obligation Extraction (`contract-obligation-extraction`): Structured register of obligations, key clauses, dates and risk flags extracted from contracts.
 Rendered from `hex-service-template`, so it starts at reference parity rather than converging
 toward it. Package `contract_obligation_extraction`, environment prefix
 `CONTRACT`, region `asia-southeast1`.

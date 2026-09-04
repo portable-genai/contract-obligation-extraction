@@ -1,4 +1,4 @@
-# Model card: Contract Obligation Extraction (Rgc12)
+# Model card: Contract Obligation Extraction (`contract-obligation-extraction`)
 
 This is a STARTER model card. It records the model boundary as built and the controls that must be
 completed before a managed deployment. Unusually for this catalog, there are **two model seams**
@@ -59,7 +59,7 @@ boot, so confirm both are served in your region before you enable either path.
   to suppress a liability-cap flag or invent a termination date. The propose-then-admit design
   limits the blast radius (an injected flag outside the taxonomy is dropped, an injected date is
   never used for arithmetic), but limiting a blast radius is not the same as screening. Bind the
-  Hrz1 guardrail gateway in front of `ExtractionPort` and fail closed when the screen is
+  `agent-guardrail-gateway` in front of `ExtractionPort` and fail closed when the screen is
   unavailable.
 - **Implement the extraction adapter** and pin its processor, layout configuration, model id and
   version here.
@@ -69,7 +69,7 @@ boot, so confirm both are served in your region before you enable either path.
 - **Evaluation of the live models**: the offline eval scores six metrics against the canned
   proposals, which measures the pipeline rather than a model's reading. `extraction_accuracy` in
   particular means something different once a real model is bound. Add a managed-profile run
-  registered with the Hrz4 promotion gate (P-08, rule R5).
+  registered with the `model-quality-gate` promotion gate (P-08, rule R5).
 - **Reasoning trace**: the audit record carries the validated register and its clause anchors, not
   the prompt and reply pair. `COMPLIANCE.md` P-07 records that as owed.
 

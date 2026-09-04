@@ -1,9 +1,10 @@
 """The admission engine: uncited candidates dropped, dedup, needs-review, severity, replay.
 
-These lock the consequential guarantees the plan names for Rgc12: every admitted obligation links
-to a real clause (a fabricated anchor is dropped, never defaulted), a duplicate collapses on the
-shared kernel key, an ambiguous or unresolved classification is held for review, the severity band
-is pure code, the cross-tenant read is a 403 not a 404, and the Rgc8 feed carries a schema version.
+These lock the consequential guarantees the plan names for contract-obligation-extraction: every
+admitted obligation links to a real clause (a fabricated anchor is dropped, never defaulted), a
+duplicate collapses on the shared kernel key, an ambiguous or unresolved classification is held for
+review, the severity band is pure code, the cross-tenant read is a 403 not a 404, and the
+third-party-risk-ddq feed carries a schema version.
 """
 
 from __future__ import annotations

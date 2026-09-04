@@ -23,13 +23,17 @@ def main(argv: list[str] | None = None) -> int:
     triage_cmd.add_argument("subject")
     triage_cmd.add_argument("text")
     triage_cmd.add_argument("--actor", default="cli-user@bank.example")
-    triage_cmd.add_argument("--tenant", default="", help="Tenant partition asserted to Hrz7.")
+    triage_cmd.add_argument(
+        "--tenant", default="", help="Tenant partition asserted to human-review-console."
+    )
 
     reg_cmd = sub.add_parser("register", help="Read a corpus contract into its register.")
     reg_cmd.add_argument("contract_id", help="A seed contract id (see the corpus).")
     reg_cmd.add_argument("--as-of", default="", help="Reference date (YYYY-MM-DD); default corpus.")
     reg_cmd.add_argument("--actor", default="cli-user@bank.example")
-    reg_cmd.add_argument("--tenant", default="", help="Tenant partition asserted to Hrz7.")
+    reg_cmd.add_argument(
+        "--tenant", default="", help="Tenant partition asserted to human-review-console."
+    )
 
     args = parser.parse_args(argv)
     container = build_container()

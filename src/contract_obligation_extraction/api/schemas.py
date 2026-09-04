@@ -28,7 +28,8 @@ class TriageResponse(BaseModel):
     decision: str
     summary: str
     requires_human_review: bool
-    #: Where the escalation WENT (rule R8): the Hrz7 review id, or the local queue reference.
+    #: Where the escalation WENT (rule R8): the human-review-console review id, or the local queue
+    #: reference.
     #: Empty only when the result did not escalate. A caller can tell a routed escalation from
     #: a flag that stopped here, which is the whole point of the rule.
     review_ref: str = ""
@@ -103,11 +104,13 @@ class RegisterResponse(BaseModel):
     #: figure in it comes from the engine, never the model.
     note: str = ""
     note_model_authored: bool = False
-    #: Where the escalation WENT (rule R8): the Hrz7 review id or the local queue reference.
+    #: Where the escalation WENT (rule R8): the human-review-console review id or the local queue
+    #: reference.
     review_ref: str = ""
     citations: list[CitationModel] = []
-    #: The versioned wire shape the Rgc8 TPRM system consumes. Carries its own
-    #: ``schema_version`` so a downstream consumer pins it; a recorded PROPOSAL until Rgc8 exists.
+    #: The versioned wire shape the third-party-risk-ddq system consumes. Carries its own
+    #: ``schema_version`` so a downstream consumer pins it; a recorded PROPOSAL until
+    #: third-party-risk-ddq exists.
     feed: dict[str, Any] = {}
 
     @classmethod

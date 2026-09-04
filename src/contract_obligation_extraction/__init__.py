@@ -1,4 +1,4 @@
-"""Contract Obligation Extraction (Rgc12).
+"""Contract Obligation Extraction (contract-obligation-extraction).
 
 Structured register of obligations, key clauses, dates and risk flags extracted from contracts.
 

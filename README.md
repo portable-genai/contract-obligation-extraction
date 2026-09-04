@@ -1,4 +1,4 @@
-# Contract Obligation Extraction (Rgc12)
+# Contract Obligation Extraction (`contract-obligation-extraction`)
 
 Structured register of obligations, key clauses, dates and risk flags extracted from contracts.
 
@@ -23,17 +23,17 @@ contract_obligation_extraction register apex-outsourcing-2026   # read a corpus 
 
 ## The vertical
 
-Rgc12 reads an executed or draft contract (MSA, SOW, DPA, outsourcing agreement, ISDA) into a
+`contract-obligation-extraction` reads an executed or draft contract (MSA, SOW, DPA, outsourcing agreement, ISDA) into a
 tracked, owner-assigned, deadline-bearing register of obligations, key clauses, dates and risk
 flags, each linked to its source clause. The model PROPOSES; the deterministic engine OWNS the
 result: clause segmentation gives every clause a stable anchor and a candidate citing an unreal
 clause is dropped; the config-owned risk-flag taxonomy validates every proposed flag and drops the
 unknown ones; the renewal clock computes what is breached or inside its notice window; the severity
 band is pure code; and a material register routes to a human reviewer. The obligation model,
-admission and versioning come from `obligation-register-kit`, pinned by the SAME tag Rgc7 pins, so
+admission and versioning come from `obligation-register-kit`, pinned by the SAME tag `obligations-control-mapping` pins, so
 one engine serves the regulatory and the contractual corpora. `POST /v1/register`, the `register`
 CLI command and the `extract_contract_register` agent tool run one flow, and the response carries
-the versioned feed the Rgc8 vendor-risk system consumes (see `docs/rgc8-feed.md`). Seed contracts
+the versioned feed the `third-party-risk-ddq` vendor-risk system consumes (see `docs/rgc8-feed.md`). Seed contracts
 in the corpus are obviously fictional and stand in for uploaded documents offline.
 
 The offline gate is SDK-free and is what CI runs (via the shared reusable hard-gate workflow):
@@ -80,7 +80,7 @@ See `docs/runbook.md`.
 | Package | Used for |
 |---|---|
 | `hex-service-kit` | `Principal` / `IdentityPort` / seeded personas, fail-closed bind + CORS, `make_require_service_caller` / the app-object exposure guard / security headers (the end-user dependency is this repo's own, so a deployment that can authenticate nobody answers with a status and a reason rather than a blanket 401), the hash-chained WORM audit log, `StrEnum` taxonomies |
-| `agent-eval-kit` | the `--mode smoke\|gate` scaffold, the Hrz4 gate client, the not-falsely-green harness |
+| `agent-eval-kit` | the `--mode smoke\|gate` scaffold, the `model-quality-gate` client, the not-falsely-green harness |
 | `pii-kit` | the jurisdiction PII pattern pack the triage service redacts with |
 | `review-kit` | the rule R8 producer path: the review payload, the submission client and the outbox |
 

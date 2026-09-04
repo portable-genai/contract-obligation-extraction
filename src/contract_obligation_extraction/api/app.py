@@ -1,4 +1,4 @@
-"""FastAPI application for Contract Obligation Extraction (Rgc12).
+"""FastAPI application for Contract Obligation Extraction (contract-obligation-extraction).
 
 Import-safe (the Container is built at request time, never at import; only ``Settings`` is read
 at import, to learn which identity adapter is bound, and no adapter is constructed), identity is
@@ -292,7 +292,8 @@ def triage(
 ) -> TriageResponse:
     """Triage a case; the audit actor is the verified principal, never the request body.
 
-    Rule R8: a result that sets ``requires_human_review`` is ROUTED to the Hrz7 console here,
+    Rule R8: a result that sets ``requires_human_review`` is ROUTED to the human-review-console
+    here,
     in the same request that produced it. Setting the flag is not the escalation; routing is.
     The maker is the verified principal, so the console records who originated the decision.
     """
@@ -315,7 +316,8 @@ def register(
     request: RegisterRequest,
     principal: Annotated[Principal, Depends(get_principal)],
 ) -> RegisterResponse:
-    """Read a contract into its obligation register; the consequential result is ROUTED to Hrz7.
+    """Read a contract into its obligation register; the consequential result is ROUTED to
+    human-review-console.
 
     The bound extraction model PROPOSES candidate obligations, dates and risk flags; the
     deterministic engine (obligation-register-kit plus this repo's segmentation, taxonomy and

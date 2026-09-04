@@ -26,7 +26,7 @@ Two things stand between that and a wrong register, and only one of them is in p
   admissibility against a frozen taxonomy, a proposal outside the taxonomy is dropped rather than
   coerced, an ambiguous proposal is routed to a human, and no date arithmetic is ever the model's.
   So a successful injection changes what is proposed, not what is admitted unreviewed.
-- **NOT in place:** screening. The Hrz1 guardrail gateway is not bound in front of
+- **NOT in place:** screening. The `agent-guardrail-gateway` is not bound in front of
   `ExtractionPort`. Rule R1 in `COMPLIANCE.md` records that, and it is the highest-priority
   security item for this repo.
 
@@ -91,10 +91,10 @@ object rather than an annotated tag object.
 ### What is deliberately out of scope?
 
 - **Login.** This repo authenticates nobody itself: the platform in front of it does.
-- **Injection defence and output filtering.** Owned by Hrz1; not bound, and needed here.
+- **Injection defence and output filtering.** Owned by `agent-guardrail-gateway`; not bound, and needed here.
 - **The document store.** This service reads a corpus; where contracts live, who may read them and
   how long they are kept are adopter controls.
-- **The review queue.** Owned by Hrz7; this repo produces escalations and routes them.
+- **The review queue.** Owned by `human-review-console`; this repo produces escalations and routes them.
 - **Network egress control.** VPC-SC governs access to Google APIs across perimeters, not
   arbitrary internet egress. The private-egress rule is an adopter network decision, called out in
   `COMPLIANCE.md` P-01.

@@ -1,8 +1,9 @@
-"""The /v1/register surface: engine numbers, the Rgc8 feed, R8 routing, 403/404, and determinism.
+"""The /v1/register surface: engine numbers, the third-party-risk-ddq feed, R8 routing, 403/404, and
+determinism.
 
 The endpoint runs the deterministic engine, narrates through the bound model, routes any material
-register to Hrz7 (rule R8) in the same request, and authorises the read against the VERIFIED
-principal's tenant. The determinism proof is load-bearing: with the narrator replaced by a
+register to human-review-console (rule R8) in the same request, and authorises the read against the
+VERIFIED principal's tenant. The determinism proof is load-bearing: with the narrator replaced by a
 hallucinating stub, every consequential field is byte-identical and the invented figures never
 appear.
 """
@@ -57,7 +58,7 @@ def test_register_returns_engine_numbers_and_routes(api_client: TestClient) -> N
     assert body["requires_human_review"] is True
     assert body["review_ref"], "rule R8: a material register is ROUTED, not merely flagged"
     assert body["citations"] and body["note"]
-    # The versioned Rgc8 feed rides along.
+    # The versioned third-party-risk-ddq feed rides along.
     assert body["feed"]["schema_version"]
 
 

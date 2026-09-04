@@ -5,7 +5,7 @@
 #         the request pipeline needs (write audit entries, write traces, read its own secrets,
 #         call the narration model). No shared kitchen-sink account and no primitive roles.
 #   P-03 (residency): the identity is project-scoped and every service it reaches is regional.
-#   P-06 / R8: routing an escalation to the Hrz7 console is an outbound HTTPS call carrying a
+#   P-06 / R8: routing an escalation to the human-review-console is an outbound HTTPS call carrying a
 #         service credential from Secret Manager, not a GCP IAM role, so nothing is granted
 #         for it here.
 #
@@ -19,11 +19,11 @@
 # datastore.owner, bigquery.dataEditor rather than bigquery.admin.
 #
 # NOTE for template maintainers: copied into a render VERBATIM. No Jinja here; the display name
-# is built from local.render_catalog_id (render.tf.json).
+# is built from local.render_repository (render.tf.json).
 
 resource "google_service_account" "app" {
   account_id   = local.app_sa_id
-  display_name = "${local.render_catalog_id} serving identity (API)"
+  display_name = "${local.render_repository} serving identity (API)"
   project      = var.project_id
 
   depends_on = [google_project_service.required]
