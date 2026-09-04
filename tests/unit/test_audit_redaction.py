@@ -6,7 +6,7 @@ they are not one sink:
 
 * the bound narration model, which is handed the register's subject;
 * the WORM audit record, which is immutable and long-retained by design;
-* the outbound Hrz7 review payload, which crosses to a SHARED console;
+* the outbound human-review-console review payload, which crosses to a SHARED console;
 * the response the API returns to the caller.
 
 The audit write and the review payload each had their own redaction and each covered only itself,
@@ -247,7 +247,7 @@ def test_the_narration_model_is_never_handed_the_raw_contract() -> None:
 
 
 def test_the_whole_outbound_review_payload_is_clean() -> None:
-    """Hrz7 is a SHARED console, and every field of the payload lands on it.
+    """human-review-console is a SHARED console, and every field of the payload lands on it.
 
     A locator or a title is as readable there as a snippet, and so are ``case_ref`` and
     ``source_key``, which are built from the subject and whose structural names are the only

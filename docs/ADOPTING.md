@@ -1,6 +1,6 @@
 # Adopting this repo as your base
 
-This repository (Rgc12, Contract Obligation Extraction) is a **common base** that a bank or other
+This repository (`contract-obligation-extraction`, Contract Obligation Extraction) is a **common base** that a bank or other
 regulated institution forks to build its own **contract-to-register service**: read an executed or
 draft contract, segment it into clauses with stable anchors, extract the obligations, key dates
 and risk flags, decide which of the model's proposals are admissible, compute the renewal and
@@ -35,7 +35,7 @@ artifacts.
 | **Vertical (the content and the flow)** | `domain/contracts.py`, `domain/renewals.py`, `domain/narration.py`, the fictional corpus in `domain/corpus.py`, the fixtures and the eval golden set | rewrite and reseed for your contract families |
 
 If your product is another *document in, tracked register out* engine, the hexagon, the three
-profiles, the propose-then-admit pattern, the eval gate and the Hrz7 review routing transfer
+profiles, the propose-then-admit pattern, the eval gate and the `human-review-console` review routing transfer
 directly; you replace the flag taxonomy and the corpus.
 
 ## 2. Core-vs-adopter-owned files (so upstream merges stay mechanical)
@@ -80,7 +80,7 @@ make gate
 `--dist` defaults to the `--resource` value; pass it explicitly when your git id differs from your
 resource stem. `--resource` is validated against the same regex the Terraform `name_prefix`
 variable enforces, so a stem the stack would refuse fails here instead of at plan time. Add
-`--include-docs` to sweep Markdown prose too. The catalog id `Rgc12` is left alone unless you pass
+`--include-docs` to sweep Markdown prose too. The catalog id `contract-obligation-extraction` is left alone unless you pass
 `--catalog-id`, so a fork stays traceable to the entry it descends from. The script deliberately
 does NOT touch the human decisions below.
 
@@ -132,23 +132,23 @@ does NOT touch the human decisions below.
 This repo is one system in a catalog of composable GRC systems (see
 [`faq/features-faq.md`](faq/features-faq.md) for the full map):
 
-- **Rgc8** third-party risk and DDQ consumes this register for the contractual terms behind a
+- `third-party-risk-ddq` third-party risk and DDQ consumes this register for the contractual terms behind a
   vendor's inherent and residual risk rating. The wire shape is FROZEN as a recorded proposal in
   [`rgc8-feed.md`](rgc8-feed.md), built from the shared kernel's envelope rather than a bespoke
   serialiser, and `tests/unit/test_contracts.py::test_the_rgc8_feed_carries_a_schema_version`
   holds the shape and its version stable so a later change is deliberate and reviewed.
-- **Rgc7** obligations and control mapping owns the firm-wide obligation graph. A contract
+- `obligations-control-mapping` and control mapping owns the firm-wide obligation graph. A contract
   register is a source that can feed it; it is not a second copy of it.
-- **Hrz7** human-review / maker-checker console: every `requires_human_review` result, including
+- `human-review-console` human-review / maker-checker console: every `requires_human_review` result, including
   every ambiguous flag proposal, is routed to it over the shared `review-kit` (rule R8); you
   wire your endpoint (`HUMAN_REVIEW_URL`), you do not re-implement the console.
-- **Hrz5** observability plus immutable WORM audit: audit events and trace spans go to it.
-- **Hrz4** AI-quality / model-risk gate: owns promotion. `eval/run_eval.py --mode gate` is the
+- `agent-observability` plus immutable WORM audit: audit events and trace spans go to it.
+- `model-quality-gate` AI-quality / model-risk gate: owns promotion. `eval/run_eval.py --mode gate` is the
   client half and refuses to run off the managed profile.
-- **Hrz3** agent registry: this agent publishes its A2A card at
+- `agent-registry`: this agent publishes its A2A card at
   `/.well-known/agent-card.json`; register it rather than inventing a discovery mechanism.
 
-The guardrail gateway (Hrz1) is **not** integrated, and it matters more here than in most repos:
+The guardrail gateway (`agent-guardrail-gateway`) is **not** integrated, and it matters more here than in most repos:
 a contract is untrusted third-party text that reaches a model on the extraction path. Rule R1 in
 [`../COMPLIANCE.md`](../COMPLIANCE.md) records that.
 
@@ -161,11 +161,11 @@ a contract is untrusted third-party text that reaches a model on the extraction 
 - [ ] Replaced the risk-flag taxonomy with yours, keeping the drop-unknown and
       route-ambiguous rules.
 - [ ] Decided whether the taxonomy needs to be configuration (the open B4 item) before go-live.
-- [ ] Wired `ExtractionPort` to your document pipeline, with Hrz1 screening in front of it.
+- [ ] Wired `ExtractionPort` to your document pipeline, with `agent-guardrail-gateway` screening in front of it.
 - [ ] Replaced the fictional corpus and every fixture.
 - [ ] Rebuilt the eval golden set for your contract families.
 - [ ] Reviewed the deploy posture (Dockerfile, Terraform, `retention_days`, bind address).
-- [ ] Wired your Hrz7 review endpoint and agreed the Rgc8 feed version with its consumer.
+- [ ] Wired your `human-review-console` review endpoint and agreed the `third-party-risk-ddq` feed version with its consumer.
 - [ ] Read [`model-card.md`](model-card.md) and closed its remaining controls before enabling
       either managed model path.
 - [ ] Recorded your baseline upstream tag so you can take future fixes.

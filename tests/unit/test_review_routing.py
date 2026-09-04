@@ -1,4 +1,4 @@
-"""Rule R8: an escalated result is ROUTED to Hrz7, not left in a per-repo boolean.
+"""Rule R8: an escalated result is ROUTED to human-review-console, not left in a per-repo boolean.
 
 This is the standing gate for the failure the rule exists to prevent. A repo can set
 ``requires_human_review = True``, pass every other test, and still auto-execute in practice
@@ -73,7 +73,7 @@ def test_a_critical_result_demands_dual_control() -> None:
 
 
 def test_the_payload_is_redacted_before_it_leaves_the_process() -> None:
-    """Hrz7 is a shared sink; a raw identifier must never reach the wire."""
+    """human-review-console is a shared sink; a raw identifier must never reach the wire."""
     router = LocalReviewRouter(_settings())
     result = _result("urgent breach, NRIC S1234567D on file", subject="Gamma LLP")
     router.route(result, maker="analyst@bank.example")

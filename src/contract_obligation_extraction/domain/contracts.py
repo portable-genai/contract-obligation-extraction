@@ -1,20 +1,21 @@
 """The contract-obligation vertical: the deterministic engine, over obligation-register-kit.
 
-This is Rgc12's reason to exist: read an executed or draft contract and produce a tracked,
-owner-assigned, deadline-bearing REGISTER of obligations, key clauses, dates and risk flags, each
-linked to the exact clause it came from. The consequential work is PURE CODE: clause segmentation
-gives every clause a stable anchor (``clauses.py``); admission refuses any candidate whose cited
-anchor is not real and dedups on the shared kernel key; the risk-flag taxonomy validates every
-proposed flag and drops the unknown ones; the renewal clock decides what is breached or inside its
-notice window (``renewals.py``); and the severity band is a pure function of the admitted flags and
-deadlines. The model (behind the extraction port) only READS and PROPOSES; it never decides which
-anchor is real, which flag is admissible, or how severe the picture is.
+This is contract-obligation-extraction's reason to exist: read an executed or draft contract and
+produce a tracked, owner-assigned, deadline-bearing REGISTER of obligations, key clauses, dates and
+risk flags, each linked to the exact clause it came from. The consequential work is PURE CODE:
+clause segmentation gives every clause a stable anchor (``clauses.py``); admission refuses any
+candidate whose cited anchor is not real and dedups on the shared kernel key; the risk-flag taxonomy
+validates every proposed flag and drops the unknown ones; the renewal clock decides what is breached
+or inside its notice window (``renewals.py``); and the severity band is a pure function of the
+admitted flags and deadlines. The model (behind the extraction port) only READS and PROPOSES; it
+never decides which anchor is real, which flag is admissible, or how severe the picture is.
 
 The kit supplies the shared model: an :class:`~obligation_register.Obligation` carries its
 :class:`~obligation_register.Citation`, ``admit`` dedups a batch, and a
 :class:`~obligation_register.Register` pins versioned, effective-dated snapshots so the register
-this repo feeds to Rgc8 carries a schema version from day one. These are the SAME
-admission rules Rgc7 applies to a regulatory corpus, pointed here at a contractual one.
+this repo feeds to third-party-risk-ddq carries a schema version from day one. These are the SAME
+admission rules obligations-control-mapping applies to a regulatory corpus, pointed here at a
+contractual one.
 
 Pure stdlib plus the stdlib-only kernel: no web framework, no cloud SDK.
 """
@@ -153,7 +154,8 @@ class ContractRegister:
     """The consequential register for one contract: rows, counts, severity, provenance.
 
     The field set overlaps the shared review envelope (``subject`` / ``severity`` / ``decision``
-    / ``summary`` / ``requires_human_review`` / ``citations``) so a surface routes it to Hrz7
+    / ``summary`` / ``requires_human_review`` / ``citations``) so a surface routes it to
+    human-review-console
     through the R8 path without the pure domain importing a surface type.
     """
 
@@ -345,10 +347,12 @@ def register_severity(rows: tuple[ContractObligation, ...]) -> Severity:
 
 
 def register_envelope(register: ContractRegister) -> dict[str, object]:
-    """The versioned wire shape for the Rgc8 feed: the kernel schema envelope over the snapshot.
+    """The versioned wire shape for the third-party-risk-ddq feed: the kernel schema envelope over
+    the snapshot.
 
-    Rgc8 consumes this per-contract register, so it carries an explicit
-    ``schema_version`` from day one (the kernel stamps it). Until Rgc8 exists this shape is a
+    third-party-risk-ddq consumes this per-contract register, so it carries an explicit
+    ``schema_version`` from day one (the kernel stamps it). Until third-party-risk-ddq exists this
+    shape is a
     recorded PROPOSAL, frozen by a contract test, not an agreement.
     """
     return envelope("contract_obligation_register", register.snapshot)

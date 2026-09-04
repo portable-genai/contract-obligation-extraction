@@ -1,4 +1,4 @@
-# Runbook: Contract Obligation Extraction (Rgc12)
+# Runbook: Contract Obligation Extraction (`contract-obligation-extraction`)
 
 ## Deploy (gcp)
 1. `CONTRACT_PROFILE=gcp`, install `.[gcp]`, region `asia-southeast1`.
@@ -137,7 +137,7 @@ loopback bound off a derived `bind_profile`, because those two fail closed in op
 see `config.ProfileChoice`.
 
 ## Human review routing (rule R8)
-Set `HUMAN_REVIEW_URL` to the Hrz7 console (HTTPS is required off loopback) and provide
+Set `HUMAN_REVIEW_URL` to the `human-review-console` (HTTPS is required off loopback) and provide
 `HUMAN_REVIEW_S2S_TOKEN`; `HUMAN_REVIEW_S2S_SIGNING_KEY` optionally signs the propagated actor. These are the
 OUTBOUND credentials and are deliberately distinct from this service's own inbound
 `CONTRACT_S2S_TOKEN`. With the URL unset, the managed router REFUSES rather
@@ -182,7 +182,7 @@ Operating rules:
 ## Agent surface
 The A2A discovery card is served at `/.well-known/agent-card.json` and is built from the same
 tool table the runtime binds, so it cannot advertise a skill the service does not implement.
-Register it with the Hrz3 registry (rule R4). The tools themselves need no agent runtime to run;
+Register it with the `agent-registry` (rule R4). The tools themselves need no agent runtime to run;
 only `build_function_tools()` imports one.
 
 ## Running the integration tests

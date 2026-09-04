@@ -99,7 +99,7 @@ resource "google_monitoring_alert_policy" "security" {
   notification_channels = var.alert_notification_channels
 
   documentation {
-    content   = "Security signal '${each.key}' fired for ${local.render_catalog_id}. Investigate the matching entries in Cloud Logging and in the WORM audit bucket (${local.worm_bucket_id})."
+    content   = "Security signal '${each.key}' fired for ${local.render_repository}. Investigate the matching entries in Cloud Logging and in the WORM audit bucket (${local.worm_bucket_id})."
     mime_type = "text/markdown"
   }
 

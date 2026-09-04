@@ -3,17 +3,17 @@
 Reading a contract into its register is the same six steps whoever asks: build the extraction
 request from the contract's segmented clauses, ask the bound extraction adapter to PROPOSE, admit
 the proposals through the deterministic engine, narrate the result with the bound model, and route
-the consequential result to Hrz7 (rule R8). Putting those steps in one place is what keeps the
-three surfaces from drifting into three subtly different pipelines, and it keeps the R8 routing on
-every path rather than on whichever surface someone remembered.
+the consequential result to human-review-console (rule R8). Putting those steps in one place is what
+keeps the three surfaces from drifting into three subtly different pipelines, and it keeps the R8
+routing on every path rather than on whichever surface someone remembered.
 
 This module lives above the pure domain because it wires the container's adapters; it imports no
 web framework and no cloud SDK, so it stays testable offline.
 
-It is also where the redaction boundary sits for this path, because this is where the edge ends.
-A contract is client document text end to end: the counterparty names a party, a notices clause
-names a person, and the extractor lifts both verbatim. Downstream of here that text reaches four
-sinks (the narration model, the WORM audit record, the outbound Hrz7 payload and the API
+It is also where the redaction boundary sits for this path, because this is where the edge ends. A
+contract is client document text end to end: the counterparty names a party, a notices clause names
+a person, and the extractor lifts both verbatim. Downstream of here that text reaches four sinks
+(the narration model, the WORM audit record, the outbound human-review-console payload and the API
 response), so it is masked ONCE, here, rather than four times at four sinks that each have to
 remember. See :func:`_redacted_document` and :func:`_redacted_proposals`.
 """
@@ -74,7 +74,7 @@ def _redacted_document(contract: Contract) -> Contract:
     the register is then built FROM is this masked view, because the register's own fields are
     where the document leaves: ``counterparty`` becomes the subject the narration model is
     prompted with, ``title`` and each clause's text become citation titles and snippets, and all
-    of it lands in the audit record, the Hrz7 payload and the response.
+    of it lands in the audit record, the human-review-console payload and the response.
 
     ``body`` is masked rather than each segmented clause, so segmentation runs over the masked
     text and no unmasked slice can survive in a snippet. Anchors are derived from clause NUMBERS,
@@ -144,7 +144,8 @@ def run_contract_register(
     actor: str,
     tenant: str = "",
 ) -> RegisterOutcome:
-    """Read one contract into its register, narrate it, and route it to Hrz7 when consequential.
+    """Read one contract into its register, narrate it, and route it to human-review-console when
+    consequential.
 
     The numbers are the deterministic engine's; the bound model only PROPOSES the candidates and
     NARRATES the result, and the narration is discarded unless it validates and every figure in it
@@ -160,7 +161,8 @@ def run_contract_register(
     The bound extractor is handed the RAW contract, because reading the document is what it is
     for. Everything it hands back, and the document text the register itself is built from, is
     masked as it crosses out of the edge (:func:`_redacted_proposals`,
-    :func:`_redacted_document`), so the narration model, the audit record, the Hrz7 payload and
+    :func:`_redacted_document`), so the narration model, the audit record, the human-review-console
+    payload and
     the response are all covered by one redaction rather than by four that must agree.
     """
     with container.tracer.span(

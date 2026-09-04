@@ -23,7 +23,7 @@
 #                        `status` stays open.
 #
 # NOTE on egress: VPC-SC governs access to GOOGLE APIs across perimeters, not arbitrary
-# internet egress. The outbound call that routes an escalation to the Hrz7 console (rule R8) is
+# internet egress. The outbound call that routes an escalation to the human-review-console (rule R8) is
 # ordinary HTTPS to a non-Google host, so it is a VPC firewall and Cloud NAT concern, not a
 # VPC-SC egress rule. Run the service with egress that reaches exactly that console and nothing
 # else.

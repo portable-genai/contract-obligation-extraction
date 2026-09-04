@@ -122,7 +122,8 @@ def extract_contract_register(
     Returns:
       A JSON-safe register with every string masked for personal data (P-04: a tool result goes
       into a model's context), plus ``review_ref``: where the escalation WENT, empty only when the
-      register did not escalate. The versioned Rgc8 feed envelope is included under ``feed``.
+      register did not escalate. The versioned third-party-risk-ddq feed envelope is included under
+      ``feed``.
     """
     contract = contract_by_id(contract_id)
     if contract is None:

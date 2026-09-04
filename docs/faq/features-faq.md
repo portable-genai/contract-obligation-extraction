@@ -45,7 +45,7 @@ facts is used instead. The `narration_groundedness` eval metric holds this at `>
 - **It will not resolve an ambiguous proposal on its own.**
 - **It will not produce a date the engine did not compute.**
 - **It will not auto-execute a consequential result.** A consequential register sets
-  `requires_human_review` and is ROUTED to Hrz7 in the same call that produced it (rule R8).
+  `requires_human_review` and is ROUTED to `human-review-console` in the same call that produced it (rule R8).
 - **It will not answer without provenance.** Every entry carries the clause anchor it came from.
 
 ### Which surfaces expose it?
@@ -60,8 +60,8 @@ Note that the repo carries the template's generic triage service (`domain/triage
 
 ### Who consumes the register?
 
-**Rgc8**, the third-party risk and DDQ system, for the contractual terms behind a vendor's
-inherent and residual risk rating. Because Rgc8 was not built when this feed was designed, the
+`third-party-risk-ddq`, the third-party risk and DDQ system, for the contractual terms behind a vendor's
+inherent and residual risk rating. Because `third-party-risk-ddq` was not built when this feed was designed, the
 wire shape is frozen as a recorded PROPOSAL rather than an agreement, and it is documented in
 [`../rgc8-feed.md`](../rgc8-feed.md). It is not a bespoke serialiser: it is the shared kernel's
 envelope over a register snapshot
@@ -73,16 +73,16 @@ version stable so a later change is deliberate and reviewed.
 
 | Concern | Owner | How this repo touches it |
 |---|---|---|
-| Contract reading, the clause anchors, the obligation register per contract | **this repo (Rgc12)** | it IS the engine. |
+| Contract reading, the clause anchors, the obligation register per contract | **this repo (`contract-obligation-extraction`)** | it IS the engine. |
 | The canonical register serialisation and the deadline primitives | the shared `obligation-register-kit` | imported, not reimplemented. |
-| Vendor inherent and residual risk | **Rgc8** third-party risk and DDQ | consumes this register through the frozen feed. |
-| The firm-wide obligation to control graph | **Rgc7** obligations and control mapping | a contract register is a source that can feed it, not a second copy of it. |
-| Agent discovery and entitlements | **Hrz3** agent registry | this agent publishes a card; the registry owns discovery. |
-| Model and agent promotion | **Hrz4** AI quality and model risk | `eval/run_eval.py --mode gate` asks Hrz4; the offline smoke mode never promotes. |
-| Traces and the immutable audit sink | **Hrz5** agent observability | `AuditSinkPort` and `ObservabilityTracerPort`. |
-| Human review and maker-checker | **Hrz7** human review console | `ReviewRouterPort` over the shared `review-kit`. Every ambiguous flag proposal lands here. |
-| Prompt-injection defence and output filtering | **Hrz1** agent guardrail gateway | **not wired today, and this repo needs it most.** A contract is untrusted third-party text that reaches a model (rule R1). |
-| Grounded retrieval over an enterprise corpus | **Hrz2** enterprise knowledge base | not wired; the document itself is the context. |
+| Vendor inherent and residual risk | `third-party-risk-ddq` third-party risk and DDQ | consumes this register through the frozen feed. |
+| The firm-wide obligation to control graph | `obligations-control-mapping` and control mapping | a contract register is a source that can feed it, not a second copy of it. |
+| Agent discovery and entitlements | `agent-registry` | this agent publishes a card; the registry owns discovery. |
+| Model and agent promotion | `model-quality-gate` AI quality and model risk | `eval/run_eval.py --mode gate` asks `model-quality-gate`; the offline smoke mode never promotes. |
+| Traces and the immutable audit sink | `agent-observability` agent observability | `AuditSinkPort` and `ObservabilityTracerPort`. |
+| Human review and maker-checker | `human-review-console` human review console | `ReviewRouterPort` over the shared `review-kit`. Every ambiguous flag proposal lands here. |
+| Prompt-injection defence and output filtering | `agent-guardrail-gateway` agent guardrail gateway | **not wired today, and this repo needs it most.** A contract is untrusted third-party text that reaches a model (rule R1). |
+| Grounded retrieval over an enterprise corpus | `enterprise-knowledge-base` | not wired; the document itself is the context. |
 
 ### Can I demo it without a cloud project?
 
@@ -98,5 +98,5 @@ screenshots.
 The honest list is [`../practices-audit.md`](../practices-audit.md) and the `TODO (repo owner)`
 rows in [`../../COMPLIANCE.md`](../../COMPLIANCE.md). The three that matter most: the managed
 `ExtractionPort` adapter is a declared seam that raises rather than a working Document AI client,
-the Hrz1 guardrail is not bound in front of it, and this repo's metric bundle is not registered
-with Hrz4.
+the `agent-guardrail-gateway` is not bound in front of it, and this repo's metric bundle is not registered
+with `model-quality-gate`.

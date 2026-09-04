@@ -74,11 +74,11 @@ production_edge_enabled = false
 # service_domain = "{{ cookiecutter.project_slug }}.fictional-bank.example"
 # dns_managed_zone = "fictional-bank-example"
 
-# Rule R8: the Hrz7 console an escalation is routed to. Required when the edge is
+# Rule R8: the human-review-console an escalation is routed to. Required when the edge is
 # enabled, because the managed router refuses rather than swallowing an escalation.
 # human_review_url = "https://review.fictional-bank.example"
 
-# Rule R5 and rule R2: the Hrz4 promotion authority and the Hrz5 collector. Leave a
+# Rule R5 and rule R2: the model-quality-gate promotion authority and the agent-observability collector. Leave a
 # variable out entirely rather than setting it to an empty string; empty is read as a
 # deliberate "no authority named" and refuses.
 # quality_service_url = "https://quality.fictional-bank.example"

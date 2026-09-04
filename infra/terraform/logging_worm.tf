@@ -29,7 +29,7 @@ resource "google_logging_project_bucket_config" "worm_audit" {
   project        = var.project_id
   location       = local.region # the selected, allowlisted region (P-03)
   bucket_id      = local.worm_bucket_id
-  description    = "WORM audit bucket for ${local.render_catalog_id} (six-month default retention)."
+  description    = "WORM audit bucket for ${local.render_repository} (six-month default retention)."
   retention_days = var.retention_days
 
   # IRREVERSIBLE when true (the default): see the warning above.

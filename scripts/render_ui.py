@@ -224,7 +224,7 @@ def render_page(
         + " / audit chain "
         + ("intact" if totals["chain_ok"] else "BROKEN (see the tamper step)")
     )
-    title = str(state["service"]) + " (" + str(state["catalog_id"]) + ") demo"
+    title = str(state["service"]) + " (" + str(state["repository"]) + ") demo"
     return (
         '<!doctype html><html lang="en"><head><meta charset="utf-8">'
         + '<meta name="viewport" content="width=device-width, initial-scale=1">'
@@ -236,8 +236,6 @@ def render_page(
         + '<header class="top"><h1>'
         + _esc(state["service"])
         + ' <span class="sub">'
-        + _esc(state["catalog_id"])
-        + " / "
         + _esc(state["repository"])
         + "</span></h1>"
         + '<div class="sub mono">'

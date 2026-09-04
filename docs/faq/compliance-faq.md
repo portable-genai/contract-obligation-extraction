@@ -84,8 +84,8 @@ proved able to go red.
 narration is wired and bounded (schema plus groundedness check, deterministic fallback), and
 extraction is a DECLARED seam that raises rather than a working client, so the managed document
 path has never run. What is NOT yet in place for either: a confirmed model id and version, a token
-budget, a rate limit, a kill switch, a live-model eval run registered with the Hrz4 promotion
-gate, and prompt-injection screening through Hrz1. That last one is the highest-priority item for
+budget, a rate limit, a kill switch, a live-model eval run registered with the `model-quality-gate` promotion
+gate, and prompt-injection screening through `agent-guardrail-gateway`. That last one is the highest-priority item for
 this repo specifically, because a contract is untrusted text written by a counterparty.
 
 ### Which regulations does this claim to satisfy?
@@ -101,6 +101,6 @@ unexamined. Nothing this system produces is legal advice or a legal opinion on a
 
 The `Partial` and `TODO (repo owner)` rows in `COMPLIANCE.md`, each of which names exactly what is
 missing. The ones that need a risk acceptance if you go live without them: the managed extraction
-adapter, rule R1 (the Hrz1 guardrail binding in front of it), rule R5 and P-08 (the Hrz4 metric
+adapter, rule R1 (the `agent-guardrail-gateway` binding in front of it), rule R5 and P-08 (the `model-quality-gate` metric
 bundle), P-10 (timeouts, circuit breaker and a documented kill switch), the document source's
 residency and access control, and P-01's private-egress rule.

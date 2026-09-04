@@ -1,9 +1,10 @@
-"""Local ReviewRouterPort: enqueue the routed review to an in-memory outbox (no live Hrz7).
+"""Local ReviewRouterPort: enqueue the routed review to an in-memory outbox (no live
+human-review-console).
 
 Exercises the R8 routing path offline. An escalated result is converted to a review and enqueued
-into the same transactional outbox the managed adapter flushes to Hrz7, so the offline gate, the
-tests and the demo can assert that an escalation was ROUTED, not merely flagged, without a
-running console. The outbox is deliberately not a no-op: a silent local router would let a
+into the same transactional outbox the managed adapter flushes to human-review-console, so the
+offline gate, the tests and the demo can assert that an escalation was ROUTED, not merely flagged,
+without a running console. The outbox is deliberately not a no-op: a silent local router would let a
 producer ship with R8 unwired and a green gate.
 """
 

@@ -11,7 +11,7 @@ also the console script), the `CONTRACT_` env prefix (including the bare token t
 `infra/terraform/render.tf.json` carries, so Terraform sets the same variable names on the
 service), the Terraform `name_prefix` resource stem (`rgc12-svc`) and the distribution / git id in
 one pass. Preview with `--dry-run`, apply with `--yes`, then recreate the venv, `make install`,
-and run `make gate`. The catalog id `Rgc12` is left alone unless you pass `--catalog-id`, so a
+and run `make gate`. The catalog id `contract-obligation-extraction` is left alone unless you pass `--catalog-id`, so a
 fork stays traceable to the entry it descends from. The script does the mechanical rename; the
 human decisions (region, IdP, the flag taxonomy, the corpus, the eval golden set) are the
 checklist in `ADOPTING.md`.
@@ -36,7 +36,7 @@ Four things:
    Document AI processor id, the layout configuration and the long-context model are
    per-deployment. This is the biggest single piece of adoption work.
 3. **Your risk-flag taxonomy**, in `domain/flags.py`.
-4. **The review console.** An Hrz7 deployment reachable at `HUMAN_REVIEW_URL`. Every ambiguous
+4. **The review console.** An `human-review-console` deployment reachable at `HUMAN_REVIEW_URL`. Every ambiguous
    flag proposal goes there, so it is load-bearing here rather than an edge case, and the managed
    router REFUSES to swallow an escalation when it is empty.
 
@@ -64,7 +64,7 @@ Stable on purpose, and version-stamped. The feed is the shared kernel's envelope
 snapshot rather than a bespoke serialiser, and
 `tests/unit/test_contracts.py::test_the_rgc8_feed_carries_a_schema_version` holds the shape and
 its version so a change is deliberate and reviewed rather than accidental. The reasoning, and the
-fact that it is a recorded PROPOSAL rather than an agreement (Rgc8 was not built when it was
+fact that it is a recorded PROPOSAL rather than an agreement (`third-party-risk-ddq` was not built when it was
 frozen), is in [`../rgc8-feed.md`](../rgc8-feed.md). If you change it, bump the version in the
 same commit.
 
@@ -104,7 +104,7 @@ the real loopback server and exits non-zero when a claim stops being true.
 ### What is still open?
 
 [`../practices-audit.md`](../practices-audit.md) carries the per-check verdict and the work list.
-The three that matter most before production: the managed extraction adapter, the Hrz1 guardrail
+The three that matter most before production: the managed extraction adapter, the `agent-guardrail-gateway`
 in front of it (a contract is untrusted third-party text), and registering this repo's metric
-bundle with Hrz4 so `eval/run_eval.py --mode gate` has an authority to ask. The Terraform stack is
+bundle with `model-quality-gate` so `eval/run_eval.py --mode gate` has an authority to ask. The Terraform stack is
 written, validated and tested against a mocked provider; it has never been applied.

@@ -255,7 +255,7 @@ def run(url: str, *, auto: bool, headless: bool, process: subprocess.Popen[bytes
     if not headless:
         webbrowser.open(url)
 
-    print(_c("1", state["service"] + " (" + state["catalog_id"] + ") walkthrough"))
+    print(_c("1", state["repository"] + " ( walkthrough"))
     print("  " + url + "  profile=" + str(state["profile"]) + " region=" + str(state["region"]))
 
     failures: list[str] = []
