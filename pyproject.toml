@@ -21,7 +21,7 @@ authors = [{ name = "Ashish Awasthi" }]
 dependencies = [
   "pii-kit @ git+https://github.com/portable-genai/pii-kit@v0.0.1",
   "hex-service-kit[fastapi] @ git+https://github.com/portable-genai/hex-service-kit@v0.0.7",
-  "agent-eval-kit @ git+https://github.com/portable-genai/agent-eval-kit@v0.0.1",
+  "agent-eval-kit @ git+https://github.com/portable-genai/agent-eval-kit@v0.0.3",
   "review-kit @ git+https://github.com/portable-genai/review-kit@v0.0.1",
   # The obligation-register kernel: BORN in obligations-control-mapping and pinned here by the SAME tag, never vendored.
   # The catalog declares the engine built once and applied to a contractual corpus in this repo.
