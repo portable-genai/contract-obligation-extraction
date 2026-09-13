@@ -115,9 +115,26 @@ generated HTML too (the `audit-first-demo` renderer output), not only hand-writt
 
 ### Required per-repo doc/artifact set
 Every repo ships the same set so no control is silently dropped: `README`, `SPEC`,
-`ARCHITECTURE`, `CONTRIBUTING`, `DEMO.md`, `COMPLIANCE.md`, `docs/runbook.md`,
-`docs/onprem-migration.md` (the exit guide), `eval/` (the quality gate), a `Dockerfile`, and
-`infra/terraform/`.
+`ARCHITECTURE`, `CONTRIBUTING`, `DEMO.md`, `docs/runbook.md`, `eval/` (the quality gate), a
+`Dockerfile`, and `infra/terraform/`.
+
+**Three artifacts left this set on 2026-09-13**, because a reference build had been mandating
+its own audit scaffolding fleet-wide.
+
+* `docs/practices-audit.md` was a self-graded A1 to G7 scorecard, and a template render ships
+  it PRE-FILLED with the verdicts the template can honestly claim on the day the repo is
+  rendered. Requiring it everywhere meant every repository asserting a per-check verdict
+  nobody had reached.
+* `docs/onprem-migration.md` was an exit guide for a profile that is a deliberate fail-fast
+  placeholder, so it documented a migration nobody performs.
+* `COMPLIANCE.md` is now a LAUNCH-SET expectation rather than a fleet-wide one. The
+  principle-to-control mapping is what a buyer is shown, so it is required where a buyer is
+  taken. `portfolio-status.sh` derives that scope from the catalog file a row lives in, not
+  from a second list that could disagree with the catalog.
+
+Retiring a requirement does not delete the files a repository already carries: several hundred
+documents point at these three, so removing the content is its own piece of work and is not
+implied here. Write any of them when there is something true to put in it.
 
 ### The principle canon
 Each repo's `COMPLIANCE.md` maps every General Principle (`P-01`..`P-13`) and dependency rule
