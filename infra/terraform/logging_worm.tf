@@ -63,7 +63,6 @@ resource "google_logging_project_sink" "audit_to_worm" {
   # derivation so it cannot quietly drift.
   filter = <<-EOT
     logName="projects/${var.project_id}/logs/${local.audit_log_name}"
-    OR logName:"cloudaudit.googleapis.com"
   EOT
 
   unique_writer_identity = true
