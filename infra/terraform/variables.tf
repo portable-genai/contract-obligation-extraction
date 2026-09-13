@@ -467,3 +467,15 @@ variable "manage_audit_config" {
     project genuinely wants data-access logging on.
   EOT
 }
+
+variable "posture_alerts_enabled" {
+  type        = bool
+  default     = false
+  description = <<-EOT
+    Whether this stack creates the posture alert policies and the log-based metrics behind
+    them. False by default. Cloud Monitoring bills every metric-based alert condition, and a
+    reference deployment that nobody pages gains nothing from them: the signals still land in
+    Cloud Logging, where an operator can read them. Set true in a deployment with an on-call
+    rota to notify, in that deployment's own tfvars.
+  EOT
+}
