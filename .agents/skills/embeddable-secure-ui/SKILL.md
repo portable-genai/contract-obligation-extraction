@@ -31,9 +31,20 @@ implicit parts of this baseline.
 
 ## Decisions baked in (do not re-litigate)
 - **Identity pattern:** the app is fronted by **GCP Identity-Aware Proxy (IAP)** in secure mode;
-  the backend VERIFIES the injected `x-goog-iap-jwt-assertion` (auth configured on the GCP
-  service, least app code). Per-hop OAuth2 token-exchange (OBO) + Workload Identity to the Hrz
-  services is the next hardening layer (document it; do not build it in this slice).
+  the backend VERIFIES the signed assertion (auth configured on the GCP service, least app
+  code). Per-hop OAuth2 token-exchange (OBO) + Workload Identity to the Hrz services is the next
+  hardening layer (document it; do not build it in this slice).
+- **The assertion arrives under TWO names, and an embedded app only ever sees the second.**
+  `x-goog-*` is Google's reserved namespace and the serverless frontend STRIPS that whole
+  namespace from a request entering a service, so an embedding host behind IAP cannot forward
+  the assertion its own edge was handed under the standard name; the broker sends the same value
+  as `x-portal-iap-assertion` as well. Read both through
+  `hex_service_kit.federation.select_assertion` and never hand-roll an `or` chain. An adapter
+  reading `x-goog-iap-jwt-assertion` alone answers **401 to every authenticated caller the day
+  it is embedded**, and nothing reports it: the gate is green, the console's first calls need no
+  identity at all, and a unit suite that builds its own request can only ever choose the header
+  its author had in mind. The header is TRANSPORT and vouches for nothing -- both names take the
+  identical verification path, so reading both grants nobody anything.
 - **Isolation/transport:** **same-origin reverse-proxy** (serve the agent under the parent
   origin, e.g. `portal.client.com/agent/*`) so the iframe is first-party (no third-party-cookie
   problem, no CORS), plus a **standalone** deployment when there is no host app.
@@ -82,11 +93,18 @@ annotate.
   local profile was chosen deliberately: read the `explicit` flag off the resolved profile
   (`ports-and-adapters-repo`, "Resolving the profile") and raise when it is False. A service
   whose profile variable simply went missing must not start handing out an approver persona.
-- `adapters/gcp/iap_identity.py` `IapIdentityAdapter`: verify the IAP assertion with **lazy**
-  `google.oauth2.id_token` / `google.auth.transport.requests` imports (keeps SDK-free profiles
-  import-clean, mirrors the other gcp adapters). Audience from `<PKG>_IAP_AUDIENCE`; derive
-  `subject` from `email`/`sub`, `tenant` from `hd`; never log the assertion; any failure ->
-  `IdentityError`.
+- `adapters/gcp/iap_identity.py` `IapIdentityAdapter`: read the assertion with
+  `federation.select_assertion` (both names, see the decision above), then verify it with
+  **lazy** `google.oauth2.id_token` / `google.auth.transport.requests` imports (keeps SDK-free
+  profiles import-clean, mirrors the other gcp adapters). Audience from `<PKG>_IAP_AUDIENCE`,
+  key set and issuer from the kit. Turn the verified claims into a `Principal` with
+  `federation.principal_from_iap_claims` rather than reading them here: `claims.get("email") or
+  claims.get("sub")` cannot tell an absent claim from an empty one, and the subject, the tenant
+  and the entitlement principals are one reviewed decision that must not have a per-repo copy.
+  Never log the assertion; any failure -> `IdentityError`.
+- Give the adapter a transport test that resolves a caller under the FORWARDED name. A suite
+  that only ever builds `{"x-goog-iap-jwt-assertion": ...}` is right about the claims it asserts
+  and silent about the half that fails in production.
 - `adapters/onprem/identity.py` `OnPremIdentityAdapter`: fail-fast `NotImplementedError`
   placeholder for the client's own IdP (OIDC/SAML).
 
