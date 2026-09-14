@@ -27,6 +27,15 @@ nothing instead of a 401. The verifier call is wrapped, and so is the lazy impor
 with the ``[gcp]`` extra missing cannot verify anybody, and it says that with a status and a
 reason rather than crashing per request.
 
+**4. The assertion is read under BOTH names it can arrive under.** ``x-goog-*`` is Google's
+reserved namespace and the serverless frontend strips it from a request entering a service, so an
+embedding host cannot forward the assertion its own edge was handed under the standard name; it
+sends the same value as ``x-portal-iap-assertion`` too. An adapter reading the reserved name alone
+therefore answers 401 to every authenticated caller the day it is embedded, and says "request did
+not pass through IAP" about a request that passed through IAP one hop earlier. Both names are read
+here through the commons selection function, and both take the identical verification path: the
+header is TRANSPORT and vouches for nothing.
+
 The refusals are split by who can act on them, which is the same split ``ports/identity.py``
 draws. A malformed, expired, wrong-audience, wrong-issuer or wrong-key assertion is THIS
 caller's problem: a plain :class:`~hex_service_kit.identity.IdentityError`, answered 401, with
@@ -50,8 +59,10 @@ from hex_service_kit.federation import (
     IAP_ASSERTION_HEADER,
     IAP_ISSUER,
     IAP_KEYS_URL,
+    PORTAL_ASSERTION_HEADER,
     FederationPolicy,
     principal_from_iap_claims,
+    select_assertion,
 )
 from hex_service_kit.identity import IdentityError, Principal, RequestContext
 
@@ -64,6 +75,22 @@ from ...ports.identity import VERIFIED, EndUserAuthUnavailableError
 # would still gate green, because a literal always agrees with itself. Rebinding makes a
 # divergence between this adapter and the reviewed set impossible rather than merely unlikely.
 _IAP_ASSERTION_HEADER = IAP_ASSERTION_HEADER
+
+#: The SAME assertion under a name the platform does NOT reserve, which is the only name an
+#: embedding host can forward it under. ``x-goog-*`` is Google's reserved namespace and the
+#: serverless frontend REMOVES that whole namespace from a request entering a service, so a host
+#: behind IAP cannot hand a downstream application the assertion its own edge was given: the host
+#: sets the reserved name, the frontend drops it, and the service refuses "request did not pass
+#: through IAP" about a request that passed through IAP one hop earlier. A fallback for TRANSPORT
+#: and never a second trust path -- what arrives under it takes the identical verification path,
+#: so a caller gains nothing by choosing it.
+#:
+#: Reading the reserved name alone answers 401 to EVERY authenticated caller the day this service
+#: is embedded, with a green gate, a healthy console and a passing offline suite, because a
+#: console's first calls need no identity at all and a unit suite that builds its own request
+#: chooses the header production never delivers. Both halves were observed on the live deployment
+#: on 2026-09-12 before this line existed.
+_PORTAL_ASSERTION_HEADER = PORTAL_ASSERTION_HEADER
 
 #: The key set IAP signs its assertions with. NOT google-auth's default, which is the OAuth2
 #: federated set: pass no ``certs_url`` and a token signed by a different Google key set verifies.
@@ -162,9 +189,28 @@ class IapIdentityAdapter:
         # network, or on what the caller happened to present.
         if not self._audience:
             raise IapAudienceUnconfiguredError(_UNCONFIGURED_AUDIENCE)
-        assertion = ctx.header(_IAP_ASSERTION_HEADER).strip()
-        if not assertion:
-            raise IdentityError("missing IAP assertion header; request did not pass through IAP")
+        # ONE selection function, in the commons, rather than another copy of an `or` chain. It
+        # examines BOTH names an assertion travels under, prefers the edge-injected one, and
+        # strips, so a header a proxy rendered blank is ABSENT rather than an assertion: a
+        # whitespace-only value is truthy, and unstripped it would skip this refusal and be
+        # refused further down by the algorithm pin, which reports a malformed token for what is
+        # actually a missing one.
+        #
+        # The keys are lower-cased here rather than assumed. ``RequestContext`` documents them as
+        # lower-cased and the web layer supplies them that way, but this is a dictionary lookup
+        # rather than ``ctx.header``, and an identity that goes missing because of header CASE is
+        # the same class of silent refusal this line exists to end.
+        try:
+            source = select_assertion({k.lower(): v for k, v in ctx.headers.items()})
+        except IdentityError as exc:
+            # This repository's own sentence, kept so the refusal reads as it always has, with the
+            # commons reason appended because that reason names BOTH headers it examined. An
+            # operator who reads only "missing IAP assertion header" goes to the load balancer;
+            # the one who reads which two names were looked for goes to the hop that dropped one.
+            raise IdentityError(
+                f"missing IAP assertion header; request did not pass through IAP: {exc}"
+            ) from exc
+        assertion = source.assertion
         # The ALGORITHM is judged before the verifier is handed the token, with no cryptography
         # and no cloud SDK, so this refusal is exercised by the offline gate rather than living
         # inside a library the gate never installs. `alg: none` is an unsigned assertion, and the
