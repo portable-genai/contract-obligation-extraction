@@ -16,6 +16,7 @@
 # NOTE for template maintainers: copied into a render VERBATIM. No Jinja here.
 
 resource "google_kms_key_ring" "cmek" {
+  count    = var.cmek_enabled ? 1 : 0
   name     = local.kms_ring_name
   location = local.region # regional, in-country key material (P-03)
 
@@ -23,8 +24,9 @@ resource "google_kms_key_ring" "cmek" {
 }
 
 resource "google_kms_crypto_key" "cmek" {
+  count    = var.cmek_enabled ? 1 : 0
   name     = local.kms_key_name
-  key_ring = google_kms_key_ring.cmek.id
+  key_ring = one(google_kms_key_ring.cmek[*].id)
 
   purpose         = "ENCRYPT_DECRYPT"
   rotation_period = "7776000s" # 90 days
@@ -58,14 +60,16 @@ data "google_project" "this" {
 
 # Cloud Logging, for the locked WORM audit bucket (logging_worm.tf).
 resource "google_kms_crypto_key_iam_member" "logging" {
-  crypto_key_id = google_kms_crypto_key.cmek.id
+  count         = var.cmek_enabled ? 1 : 0
+  crypto_key_id = one(google_kms_crypto_key.cmek[*].id)
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:service-${data.google_project.this.number}@gcp-sa-logging.iam.gserviceaccount.com"
 }
 
 # Cloud Run, for the serving revision's own encrypted storage (production_edge.tf).
 resource "google_kms_crypto_key_iam_member" "run" {
-  crypto_key_id = google_kms_crypto_key.cmek.id
+  count         = var.cmek_enabled ? 1 : 0
+  crypto_key_id = one(google_kms_crypto_key.cmek[*].id)
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:service-${data.google_project.this.number}@serverless-robot-prod.iam.gserviceaccount.com"
 }
@@ -73,7 +77,8 @@ resource "google_kms_crypto_key_iam_member" "run" {
 # Vertex AI, for whatever narration or classification surface this vertical binds. The binding
 # is in the baseline so the key is already bound on the day the adapter arrives.
 resource "google_kms_crypto_key_iam_member" "aiplatform" {
-  crypto_key_id = google_kms_crypto_key.cmek.id
+  count         = var.cmek_enabled ? 1 : 0
+  crypto_key_id = one(google_kms_crypto_key.cmek[*].id)
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:service-${data.google_project.this.number}@gcp-sa-aiplatform.iam.gserviceaccount.com"
 }
@@ -82,7 +87,8 @@ resource "google_kms_crypto_key_iam_member" "aiplatform" {
 # bucket is per-repo, the key binding is not the interesting part of that commit, and a bucket
 # created without it is silently encrypted under Google-managed keys.
 resource "google_kms_crypto_key_iam_member" "storage" {
-  crypto_key_id = google_kms_crypto_key.cmek.id
+  count         = var.cmek_enabled ? 1 : 0
+  crypto_key_id = one(google_kms_crypto_key.cmek[*].id)
   role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:service-${data.google_project.this.number}@gs-project-accounts.iam.gserviceaccount.com"
 }

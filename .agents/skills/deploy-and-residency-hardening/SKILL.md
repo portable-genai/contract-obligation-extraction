@@ -76,9 +76,15 @@ the constant; `cdd-sow-research` realizes the full set and leaner repos keep a s
 3. **Managed-first, minimal surface.** `apis.tf` enables only the services the pinned stack
    actually uses. No public ingress; egress through the perimeter / Private Service Connect,
    not the open internet.
-4. **CMEK does not cascade.** One regional customer-managed key, with an explicit IAM binding
-   for each service agent that needs it (no project-wide grant). Encryption is bound end to
-   end: storage, logs, and the model/runtime.
+4. **CMEK does not cascade, and it is optional.** One regional customer-managed key, with an
+   explicit IAM binding for each service agent that needs it (no project-wide grant), bound end
+   to end: storage, logs, and the model/runtime. All of it sits behind `cmek_enabled`, default
+   false, because the decision is irreversible: a key ring can never be deleted and a log bucket
+   that has CMEK can never drop it. Everything is encrypted at rest with Google-managed keys
+   regardless. A deployment with a customer whose data it must shred, whose key access must
+   be audited or whose keys must live in an HSM sets it true in its own tfvars BEFORE the
+   first apply; the reference deployment keeps it where it already applied it and declines
+   it for anything new.
 5. **VPC-SC perimeter, dry-run first where supported.** Stand up the service perimeter in
    dry-run, confirm no legitimate path is broken from the audit logs, then enforce
    (`cdd-sow-research` does this with an enforce toggle plus an explicit dry-run spec). Some
@@ -144,7 +150,7 @@ the scanner, the Org Policy, and the app's load-time check.
 - [ ] `Dockerfile` + full `infra/terraform/` present; no secrets baked in.
 - [ ] Region is allowlist-validated at `terraform plan` AND at app settings load (same list).
 - [ ] Org Policy pins resource locations (plus the repo-specific constraints it needs).
-- [ ] One regional CMEK key, IAM-bound per service (no project-wide grant).
+- [ ] One regional CMEK key, IAM-bound per service (no project-wide grant), behind `cmek_enabled` (default false).
 - [ ] VPC-SC perimeter enforced only after a clean dry-run (where the provider supports it).
 - [ ] WORM/immutable audit log sink; the app redacts before logging.
 - [ ] Log-based alerts on the posture signals (key creation, VPC-SC denials, CMEK changes)
