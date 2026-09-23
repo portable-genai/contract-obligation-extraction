@@ -37,10 +37,10 @@ project_id = "fictional-{{ cookiecutter.package_name }}-project" # obviously fic
 # worm_locked         = false
 
 # ----------------------------------------------------------------------------- #
-# POSTURE B: sovereign (the defaults). Org policies on, WORM bucket locked, and a
-# VPC-SC perimeter that starts in DRY RUN. Supply the access policy id, apply,
-# read the vpc_sc_denials alert for a full business cycle, add the operators, and
-# only then set vpc_sc_enforce = true.
+# POSTURE B: sovereign. Org policies on and a VPC-SC perimeter that starts in DRY
+# RUN, both by default; the WORM lock has NO default and is stated below. Supply
+# the access policy id, apply, read the vpc_sc_denials alert for a full business
+# cycle, add the operators, and only then set vpc_sc_enforce = true.
 # ----------------------------------------------------------------------------- #
 access_policy_id = "123456789012"
 vpc_sc_enforce   = false
