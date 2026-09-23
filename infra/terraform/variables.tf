@@ -143,12 +143,17 @@ variable "worm_locked" {
     # retention window can NEVER be reduced or deleted until every entry    #
     # ages out (180 days by default), not even with project-owner rights.   #
     #########################################################################
-    true (the default) is REQUIRED for a compliant production deploy: the audit trail is
+    true is REQUIRED for a compliant production deploy: the audit trail is
     Write-Once-Read-Many only when locked. Set false ONLY for an evaluation or demo stack
     that must stay deletable; that posture is NOT compliant.
+
+    There is deliberately NO DEFAULT. A plan refuses until the deployment names the lock,
+    because an unset value may take a reviewed default and may never take an irreversible one:
+    a `true` default once locked a sibling stack's bucket for seven years on a first apply
+    nobody reviewed, and the only exit was deleting the project. Every stack that has this
+    control spells it `worm_locked`, and none of them defaults it.
   EOT
   type        = bool
-  default     = true
 }
 
 variable "enable_org_policies" {

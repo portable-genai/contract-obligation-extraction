@@ -19,6 +19,16 @@
 
 mock_provider "google" {}
 
+
+# worm_locked has NO DEFAULT (variables.tf): the audit bucket's lock is irreversible, so a plan
+# refuses until the deployment states it. These runs are deployments too, so the file states it
+# once here, in the compliant production form, and the run that exercises the unlocked posture
+# overrides it. A run that forgot to state it would fail on the missing required variable,
+# which is the refusal this shape exists to produce.
+variables {
+  worm_locked = true
+}
+
 run "residency_defaults_are_in_country" {
   command = plan
 
@@ -58,9 +68,11 @@ run "residency_defaults_are_in_country" {
     error_message = "Service-account key creation must stay forbidden: an exported key is a credential that leaves the perimeter in a file."
   }
 
+  # The lock is STATED by this run (the file-level variables block), not defaulted. What is
+  # defaulted is the retention window, which sits on the six-month floor.
   assert {
     condition     = var.worm_locked && var.retention_days == 180
-    error_message = "The audit bucket must stay locked at the six-month retention floor by default."
+    error_message = "A stated lock must sit on the six-month retention floor."
   }
 
   assert {
@@ -382,4 +394,22 @@ run "reject_moving_secret_version" {
   }
 
   expect_failures = [var.additional_secret_env]
+}
+
+# The reference deployment's posture: the lock stated false, so the stack stays destroyable.
+# Without this run the unlocked posture goes unexercised, and a lock hard-coded back into the
+# bucket would leave every other run in this file green.
+run "an_unlocked_stack_is_created_unlocked" {
+  command = plan
+
+  variables {
+    project_id    = "fictional-agent-project"
+    enable_vpc_sc = false
+    worm_locked   = false
+  }
+
+  assert {
+    condition     = !google_logging_project_bucket_config.worm_audit.locked
+    error_message = "worm_locked = false must leave the bucket UNLOCKED and the stack destroyable."
+  }
 }
