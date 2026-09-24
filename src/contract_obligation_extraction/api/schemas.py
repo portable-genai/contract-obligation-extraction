@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -29,14 +29,17 @@ class TriageResponse(BaseModel):
     summary: str
     requires_human_review: bool
     #: Where the escalation WENT (rule R8): the human-review-console review id, or the local queue
-    #: reference.
-    #: Empty only when the result did not escalate. A caller can tell a routed escalation from
-    #: a flag that stopped here, which is the whole point of the rule.
+    #: reference. Empty exactly when ``review_routing`` is not ``routed``.
     review_ref: str = ""
+    #: What happened to the hand-off: routed, failed, off or not_required. ``failed`` means the
+    #: result is NOT queued for review, and the console says so.
+    review_routing: Literal["routed", "failed", "off", "not_required"] = "not_required"
     citations: list[CitationModel] = []
 
     @classmethod
-    def from_domain(cls, result: TriageResult, *, review_ref: str = "") -> TriageResponse:
+    def from_domain(
+        cls, result: TriageResult, *, review_ref: str = "", review_routing: str = "not_required"
+    ) -> TriageResponse:
         return cls(
             subject=result.subject,
             severity=result.severity.value,
@@ -44,6 +47,7 @@ class TriageResponse(BaseModel):
             summary=result.summary,
             requires_human_review=result.requires_human_review,
             review_ref=review_ref,
+            review_routing=review_routing,  # type: ignore[arg-type]
             citations=[
                 CitationModel(source_id=c.source_id, title=c.title, snippet=c.snippet)
                 for c in result.citations
@@ -105,8 +109,11 @@ class RegisterResponse(BaseModel):
     note: str = ""
     note_model_authored: bool = False
     #: Where the escalation WENT (rule R8): the human-review-console review id or the local queue
-    #: reference.
+    #: reference. Empty exactly when ``review_routing`` is not ``routed``.
     review_ref: str = ""
+    #: What happened to the hand-off: routed, failed, off or not_required. ``failed`` means the
+    #: register is NOT queued for review, and the console says so.
+    review_routing: Literal["routed", "failed", "off", "not_required"] = "not_required"
     citations: list[CitationModel] = []
     #: The versioned wire shape the third-party-risk-ddq system consumes. Carries its own
     #: ``schema_version`` so a downstream consumer pins it; a recorded PROPOSAL until
@@ -120,6 +127,7 @@ class RegisterResponse(BaseModel):
         *,
         note: NarratedNote,
         review_ref: str = "",
+        review_routing: str = "not_required",
     ) -> RegisterResponse:
         return cls(
             contract_id=register.contract_id,
@@ -137,6 +145,7 @@ class RegisterResponse(BaseModel):
             note=note.text,
             note_model_authored=note.model_authored,
             review_ref=review_ref,
+            review_routing=review_routing,  # type: ignore[arg-type]
             citations=[
                 CitationModel(
                     source_id=c.source_id,

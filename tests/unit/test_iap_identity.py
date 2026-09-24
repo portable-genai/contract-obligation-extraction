@@ -55,6 +55,17 @@ from contract_obligation_extraction.ports.identity import (
 
 from tests.conftest import is_blocked_sdk
 
+
+@pytest.fixture(autouse=True)
+def _managed_deployment_names_its_console(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A managed process with review routing on refuses to boot without a console.
+
+    These tests build the app under the managed profile to exercise identity, not routing, so
+    they name a console the way any managed deployment must.
+    """
+    monkeypatch.setenv("HUMAN_REVIEW_URL", "https://review.example.test")
+
+
 #: A configured audience: the IAP-protected resource, obviously fictional.
 AUDIENCE = "/projects/000000000000/global/backendServices/1111111111111111111"
 
@@ -386,6 +397,8 @@ _REBOUND_SETTINGS = "\n".join(
     [
         'audit_path: ":memory:"',
         "iap_audience: " + "${" + _AUDIENCE_ENV + ":-}",
+        # The managed profile names its review console or refuses to boot, as a deployment must.
+        "review_url: ${HUMAN_REVIEW_URL:-}",
         "adapters:",
         "  audit:",
         *[f"    {p}: {_PKG}.adapters.local.audit:LocalAuditAdapter" for p in ("local", "gcp")],

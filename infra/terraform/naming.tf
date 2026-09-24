@@ -65,6 +65,7 @@ locals {
     "${local.render_env_prefix}_SETTINGS",
     "${local.render_env_prefix}_IAP_AUDIENCE",
     "${local.render_env_prefix}_QUALITY_URL",
+    "${local.render_env_prefix}_REVIEW_ROUTING",
     "GOOGLE_CLOUD_PROJECT",
     "GCP_REGION",
     "HUMAN_REVIEW_URL",

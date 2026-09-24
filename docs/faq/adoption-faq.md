@@ -38,7 +38,7 @@ Four things:
 3. **Your risk-flag taxonomy**, in `domain/flags.py`.
 4. **The review console.** An `human-review-console` deployment reachable at `HUMAN_REVIEW_URL`. Every ambiguous
    flag proposal goes there, so it is load-bearing here rather than an edge case, and the managed
-   router REFUSES to swallow an escalation when it is empty.
+   profile REFUSES TO BOOT with routing on and the URL empty.
 
 ### Can I retune the taxonomy without touching code?
 
