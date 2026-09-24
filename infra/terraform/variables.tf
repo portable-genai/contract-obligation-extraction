@@ -254,9 +254,9 @@ variable "human_review_url" {
   description = <<-EOT
     The human-review-console the managed review router submits escalations to
     (HUMAN_REVIEW_URL). Rule R8 says an escalation is ROUTED and never merely flagged,
-    and the managed router refuses rather than swallowing one when this is empty, so the
-    serving edge requires it: a deploy that would ship R8 unwired fails here instead of at
-    the first escalation. HTTPS is required, because the payload carries a redacted result.
+    and the service refuses to boot with routing on and this empty, so the serving edge
+    requires it unless review_routing_enabled is false: a deploy that would ship R8 unwired
+    fails here instead of at startup. HTTPS is required, because the payload carries a redacted result.
   EOT
   type        = string
   default     = ""
@@ -267,9 +267,15 @@ variable "human_review_url" {
   }
 
   validation {
-    condition     = !var.production_edge_enabled || can(regex("^https://", var.human_review_url))
-    error_message = "production_edge_enabled requires human_review_url (rule R8): the managed review router refuses to run with no console configured."
+    condition     = !var.production_edge_enabled || !var.review_routing_enabled || can(regex("^https://", var.human_review_url))
+    error_message = "production_edge_enabled with review_routing_enabled requires human_review_url (rule R8): the service refuses to boot with routing on and no console named. Name one, or set review_routing_enabled = false."
   }
+}
+
+variable "review_routing_enabled" {
+  description = "Switch review routing to the human-review-console (the service's _REVIEW_ROUTING variable). A cheap runtime control: on in the reference, reversible, so it takes a default."
+  type        = bool
+  default     = true
 }
 
 variable "quality_service_url" {

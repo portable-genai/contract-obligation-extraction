@@ -31,7 +31,9 @@ A human, always, for anything consequential, and in this vertical that includes 
 flag proposal. `requires_human_review` and the call to `ReviewRouterPort.route` are one act, not a
 flag plus an intention: the API, the CLI and the agent tools all route in the same call that
 produced the result, and `tests/unit/test_review_routing.py` asserts the routing rather than the
-flag. Under the managed profile the router REFUSES when no console is configured.
+flag. Under the managed profile, routing on with no console configured refuses at boot, and a
+hand-off that fails at request time is reported as `review_routing: "failed"` rather than read as
+reviewed.
 
 ### Where does the data live, and is residency enforced or just documented?
 

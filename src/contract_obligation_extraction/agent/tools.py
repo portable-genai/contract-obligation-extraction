@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Any
 from hex_service_kit.serialization import to_jsonable
 from pii_kit import redact
 
+from ..adapters.controls import RecordingReviewRouter
 from ..config import Container, Settings, build_container
 from ..domain.corpus import AS_OF, contract_by_id
 from ..domain.models import TriageInput
@@ -80,22 +81,22 @@ def triage_case(
 
     Returns:
       A JSON-safe result dict with every string masked for personal data (P-04: a tool result
-      goes into a model's context), plus ``review_ref``: where the escalation WENT. It is empty
-      only when the result did not escalate, so a caller can tell a routed escalation from a
-      flag nobody read.
+      goes into a model's context), plus ``review_ref``: where the escalation WENT, and
+      ``review_routing``: routed, failed, off or not_required. The reference is empty unless the
+      hand-off was routed, so a caller can tell a routed escalation from one that stopped here.
     """
     container = _container(settings)
     case = TriageInput(subject=subject, text=text)
     result = TriageService(container.audit, container.tracer).triage(case, actor=actor)
-    review_ref = ""
-    if result.requires_human_review:
-        review_ref = container.review_router.route(result, maker=actor, tenant=tenant)
+    routing = RecordingReviewRouter(container.review_router)
+    review_ref = routing.route(result, maker=actor, tenant=tenant)
     payload = _redacted(to_jsonable(result))
     if not isinstance(payload, dict):  # pragma: no cover - dataclasses serialise to objects
         raise TypeError("a triage result must serialise to a JSON object")
     # Attached after the redaction pass: it is a routing reference, not narrative text, and
     # masking an identifier would break the caller's ability to look the review up.
     payload["review_ref"] = review_ref
+    payload["review_routing"] = routing.outcome.value
     return payload
 
 
@@ -121,8 +122,9 @@ def extract_contract_register(
 
     Returns:
       A JSON-safe register with every string masked for personal data (P-04: a tool result goes
-      into a model's context), plus ``review_ref``: where the escalation WENT, empty only when the
-      register did not escalate. The versioned third-party-risk-ddq feed envelope is included under
+      into a model's context), plus ``review_ref``: where the escalation WENT, and
+      ``review_routing``: routed, failed, off or not_required. The reference is empty unless the
+      hand-off was routed. The versioned third-party-risk-ddq feed envelope is included under
       ``feed``.
     """
     contract = contract_by_id(contract_id)
@@ -160,6 +162,7 @@ def extract_contract_register(
     # Attached after redaction: a routing reference is not narrative text, and masking it would
     # break the caller's ability to look the review up.
     masked["review_ref"] = outcome.review_ref
+    masked["review_routing"] = outcome.review_routing
     return masked
 
 

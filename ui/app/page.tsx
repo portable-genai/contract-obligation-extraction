@@ -11,6 +11,23 @@ const API = "/api/agent";
 // validates the selection against its own list, so a hand-crafted value cannot invent a persona.
 const PERSONAS = ["analyst", "approver", "auditor", "other-tenant"];
 
+// What happened to the human-review hand-off, in the words the user needs. A result that
+// escalated but is not queued must say so rather than read as reviewed.
+const REVIEW_ROUTING_TEXT: Record<string, string> = {
+  routed: "Sent to the review console.",
+  failed: "Could not reach the review console; this case is not queued for review.",
+  off: "Review routing is off in this deployment; this case is not queued for review.",
+};
+
+function reviewRoutingOf(body: string): string | undefined {
+  try {
+    const parsed = JSON.parse(body) as { review_routing?: unknown };
+    return typeof parsed.review_routing === "string" ? parsed.review_routing : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 interface CardSummary {
   name?: string;
   description?: string;
@@ -100,6 +117,11 @@ export default function Home() {
         </fieldset>
       </form>
 
+      {result && REVIEW_ROUTING_TEXT[reviewRoutingOf(result) ?? ""] ? (
+        <p className="sub" data-review-routing={reviewRoutingOf(result)}>
+          {REVIEW_ROUTING_TEXT[reviewRoutingOf(result) ?? ""]}
+        </p>
+      ) : null}
       {result ? <pre className={failed ? "result error" : "result"}>{result}</pre> : null}
 
       <footer>

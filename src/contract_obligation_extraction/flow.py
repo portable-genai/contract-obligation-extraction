@@ -25,6 +25,7 @@ from datetime import date
 
 from pii_kit import redact
 
+from .adapters.controls import RecordingReviewRouter
 from .config import Container
 from .domain.contracts import Contract, ContractRegister, RegisterService
 from .domain.kernel import Citation as AuditCitation
@@ -45,7 +46,12 @@ class RegisterOutcome:
 
     register: ContractRegister
     note: NarratedNote
+    #: The console's review id or the local queue reference; empty unless ``review_routing`` is
+    #: ``routed``.
     review_ref: str
+    #: What happened to the hand-off: routed, failed, off or not_required. ``failed`` means the
+    #: register is NOT queued for review, and every surface says so.
+    review_routing: str = "not_required"
 
 
 def extraction_request_for(contract: Contract) -> ExtractionRequest:
@@ -180,9 +186,17 @@ def run_contract_register(
             actor=actor,
         )
         note = NarrationService(container.generation).narrate(register)
+        # The hand-off never fails an already-built, already-audited register; the outcome says
+        # what happened to it instead (the fleet's runtime-control contract).
+        routing = RecordingReviewRouter(container.review_router)
         review_ref = ""
         if register.requires_human_review:
-            review_ref = container.review_router.route(
+            review_ref = routing.route(
                 _register_to_review(register), maker=actor, tenant=tenant or contract.tenant
             )
-        return RegisterOutcome(register=register, note=note, review_ref=review_ref)
+        return RegisterOutcome(
+            register=register,
+            note=note,
+            review_ref=review_ref,
+            review_routing=routing.outcome.value,
+        )
