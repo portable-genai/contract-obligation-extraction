@@ -205,6 +205,15 @@ a wildcard CORS allowlist sitting in the one layer nothing was scanning. So:
 - `app/layout.tsx`: EMBED mode, when `process.env.NEXT_PUBLIC_EMBED === "1"` render children
   without the app header/chrome so the host owns the chrome. (An exact-match comparison against
   a literal is the one two-state read that is safe: it neither takes a default nor grants.)
+  The model pills are NOT chrome and stay in both modes: two small pills fixed at the top right,
+  the model that ANSWERED and `Search` when an online search tool was used. The service installs
+  `hex_service_kit.web.install_answer_provenance(app)` and each model adapter calls
+  `hex_service_kit.provenance.note_model(...)` / `note_search()` for the call it made; the pills
+  start from `/healthz`'s `generator_model` (styled as configured) and switch to the
+  `X-Answered-By` / `X-Search-Used` headers of the last answer, read by one `window.fetch`
+  wrapper. A Next proxy route forwards both headers; a console that calls the service
+  cross-origin relies on the kit's `Access-Control-Expose-Headers`. Copy `ModelPills.tsx` and
+  `lib/answer-provenance.mjs` from `hex-service-template` rather than writing a banner.
 - `next.config.mjs`: `basePath`/`assetPrefix` from `NEXT_PUBLIC_BASE_PATH` (blank => standalone
   unchanged) so it can mount under a reverse-proxy sub-path.
 - **The browser never asserts who it is.** Every client-supplied actor, tenant, role, ACL and
