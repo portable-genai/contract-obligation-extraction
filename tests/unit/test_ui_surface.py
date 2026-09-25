@@ -216,6 +216,36 @@ def test_the_service_credential_never_reaches_the_browser() -> None:
 
 
 @requires_ui
+def test_the_console_shows_the_model_that_answered_as_pills_not_a_banner() -> None:
+    """Two pills at the top right name the model that ANSWERED, and Search when it searched.
+
+    They replaced the full-width provenance banner (owner decision, 2026-09-23), which named the
+    model configuration would call rather than the one that answered. The whole chain is held
+    here from the offline gate: the pills start from `/healthz`, read both answer headers through
+    the one fetch wrapper, are mounted in the layout, and the proxy forwards both headers from
+    the service. A proxy that copied only the content type would leave the pills configured
+    forever with every node test green. `ui/tests/answer-provenance.test.mjs` proves the wrapper.
+    """
+    pills = _code_only((UI / "app" / "ModelPills.tsx").read_text(encoding="utf-8"))
+    assert '"/healthz"' in pills, "the pills do not start from the service's own /healthz"
+    assert "watchAnswers(window" in pills, "the pills do not read the answer headers"
+    assert "generator_model" in pills and "runtime" in pills
+    watcher = (UI / "lib" / "answer-provenance.mjs").read_text(encoding="utf-8")
+    for header in ('"x-answered-by"', '"x-search-used"'):
+        assert header in watcher, "the pills never read " + header
+    layout = (UI / "app" / "layout.tsx").read_text(encoding="utf-8")
+    assert "<ModelPills />" in layout, "the pills are not mounted on every page"
+    route = (UI / "app" / "api" / "agent" / "[...path]" / "route.ts").read_text(encoding="utf-8")
+    for header in ('"x-answered-by"', '"x-search-used"'):
+        assert header in route, "the proxy drops " + header + " from the service's response"
+    assert "for (const name of ANSWER_HEADERS)" in _code_only(route), "nothing forwards them"
+    assert not (UI / "app" / "ProvenanceBanner.tsx").exists(), "the old banner is back"
+    css = (UI / "app" / "globals.css").read_text(encoding="utf-8")
+    assert ".provenance-banner" not in css and ".model-pills" in css
+    assert (UI / "tests" / "answer-provenance.test.mjs").exists()
+
+
+@requires_ui
 def test_the_ui_documents_how_to_remove_itself() -> None:
     """Most catalog repos have no UI. Removing it must be cheaper than hand-building one."""
     assert "make drop-ui" in (UI / "README.md").read_text(encoding="utf-8")

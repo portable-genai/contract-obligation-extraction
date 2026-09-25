@@ -11,8 +11,15 @@ from __future__ import annotations
 
 import json
 
+from hex_service_kit import provenance
+
 from ...config import Settings
 from ...ports.generation import GenerationRequest, GenerationResponse
+
+#: What the console's model pill names when this stub answers: the same string
+#: ``Settings.generator_model`` reports under ``local``, so the pill never changes its story
+#: between "configured" and "answered" on a laptop.
+STUB_MODEL = "deterministic-offline-stub"
 
 
 class LocalGenerationAdapter:
@@ -29,4 +36,5 @@ class LocalGenerationAdapter:
             f"review; {values.get('overdue', '0')} deadline(s) overdue and "
             f"{values.get('in_notice_window', '0')} inside a notice window."
         )
+        provenance.note_model(STUB_MODEL)
         return GenerationResponse(text=json.dumps({"note": note}), model="local-deterministic")

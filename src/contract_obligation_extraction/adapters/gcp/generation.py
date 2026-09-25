@@ -17,6 +17,10 @@ Developer API or Vertex (``GOOGLE_GENAI_USE_VERTEXAI``) without a code change he
 
 from __future__ import annotations
 
+from typing import Any
+
+from hex_service_kit import provenance
+
 from ...config import Settings
 from ...ports.generation import GenerationRequest, GenerationResponse
 
@@ -42,11 +46,24 @@ class CloudGenerationAdapter:
         completion = client.models.generate_content(
             model=self._MODEL,
             contents=request.prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=request.system,
-                response_mime_type="application/json",
-                max_output_tokens=request.max_output_tokens,
-                temperature=0.2,
-            ),
+            config=generation_config(types, request),
         )
+        # The console's model pill names what ANSWERED, so the model is noted only once it has.
+        provenance.note_model(self._MODEL)
         return GenerationResponse(text=completion.text or "", model=self._MODEL)
+
+
+def generation_config(types: Any, request: GenerationRequest) -> Any:
+    """The per-call config. ``temperature`` is sent only when the call site pinned one.
+
+    Leaving it out is how a call is FREE: some models reject the parameter, so free means absent,
+    never a default value sent on the caller's behalf.
+    """
+    options: dict[str, Any] = {
+        "system_instruction": request.system,
+        "response_mime_type": "application/json",
+        "max_output_tokens": request.max_output_tokens,
+    }
+    if request.temperature is not None:
+        options["temperature"] = request.temperature
+    return types.GenerateContentConfig(**options)

@@ -110,11 +110,48 @@ footer {
   margin-top: 24px;
 }
 
-.provenance-banner {
-  margin: -32px -18px 20px;
-  padding: 5px 18px;
-  border-bottom: 1px solid var(--ink-200);
-  background: var(--ink-100);
-  color: var(--ink-500);
-  font-size: 12px;
+/* The model pills: which model answered the last request, and Search when it searched.
+   Fixed at the top right, inside body's top padding, so they stay in view without covering any
+   page's own controls. Each pill carries its own opaque background, so it reads over whatever
+   scrolls beneath it. The page renders light in either colour scheme, and so do they. */
+.model-pills {
+  position: fixed;
+  top: 6px;
+  right: 10px;
+  z-index: 20;
+  display: flex;
+  gap: 6px;
+  max-width: calc(100vw - 20px);
 }
+
+.model-pill {
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 1px 9px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.model-pill.configured {
+  background: var(--ink-50);
+  border-color: var(--ink-200);
+  border-style: dashed;
+  color: var(--ink-500);
+}
+
+.model-pill.answered {
+  background: var(--ink-900);
+  border-color: var(--ink-900);
+  color: #fff;
+}
+
+.model-pill.search {
+  background: var(--ok);
+  border-color: var(--ok);
+  color: #fff;
+}
+

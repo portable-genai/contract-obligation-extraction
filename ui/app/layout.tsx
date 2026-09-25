@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { ProvenanceBanner } from "./ProvenanceBanner";
+import { ModelPills } from "./ModelPills";
 import "./globals.css";
 
 // The title is intentionally generic. The service's own identity comes from its agent card at
@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <ProvenanceBanner />
+        <ModelPills />
         {children}
       </body>
     </html>
