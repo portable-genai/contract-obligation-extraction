@@ -17,7 +17,7 @@
 #
 # tag -> commit, and `tests/unit/test_repo_artifacts.py` proves each line against the tag
 # `pyproject.toml` names and against the other lockfile:
-#   hex-service-kit          v0.0.8 = 2cf15351dc968d908697b89237d4b5b42b1870a4
+#   hex-service-kit          v0.0.9 = 77bd9ca2afbf1c6bca897f24d8a36908f85d55cd
 #   agent-eval-kit           v0.0.3 = da2fbc9ae7c5f85175686710724430e0dd6351e2
 #   review-kit               v0.0.2 = dec72b6437fef1f011e6660734dfd3ff23767a9e
 #   pii-kit                  v0.0.1 = 654493048a8434d645757cc916bb9d446313688f
@@ -32,7 +32,7 @@ anyio==4.15.1
     # via
     #   httpx
     #   starlette
-ast-serialize==0.11.1
+ast-serialize==0.11.2
     # via mypy
 certifi==2026.7.22
     # via
@@ -48,13 +48,13 @@ h11==0.16.0
     # via
     #   httpcore
     #   uvicorn
-hex-service-kit @ git+https://github.com/portable-genai/hex-service-kit@2cf15351dc968d908697b89237d4b5b42b1870a4
+hex-service-kit @ git+https://github.com/portable-genai/hex-service-kit@77bd9ca2afbf1c6bca897f24d8a36908f85d55cd
     # via contract-obligation-extraction (pyproject.toml)
 httpcore==1.0.9
     # via httpx
 httpx==0.28.1
     # via agent-eval-kit
-idna==3.19
+idna==3.20
     # via
     #   anyio
     #   httpx
@@ -90,7 +90,7 @@ review-kit @ git+https://github.com/portable-genai/review-kit@dec72b6437fef1f011
     # via contract-obligation-extraction (pyproject.toml)
 ruff==0.16.7
     # via contract-obligation-extraction (pyproject.toml)
-starlette==1.6.0
+starlette==1.7.0
     # via
     #   fastapi
     #   hex-service-kit
@@ -109,5 +109,5 @@ typing-inspection==0.4.4
     # via
     #   fastapi
     #   pydantic
-uvicorn==0.52.4
+uvicorn==0.54.0
     # via contract-obligation-extraction (pyproject.toml)
