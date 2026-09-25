@@ -11,8 +11,9 @@
 #   P-07 (auditability and retention): `retention_days` is a variable because the WORM bucket
 #         lock is irreversible, so the retention window has to be a deliberate decision.
 #   P-06 / R8 (maker-checker): `human_review_url` is required when the serving edge is
-#         enabled, because the managed review router refuses to swallow an escalation with no
-#         console configured. A deploy that would ship R8 unwired fails at plan time.
+#         enabled with `review_routing_enabled` on, because the service refuses to boot with
+#         review routing on and no console named. A deploy that would ship R8 unwired fails at
+#         plan time; one that states routing off (`review_routing_enabled = false`) needs none.
 #
 # Two deploy paths are supported:
 #   - QUICK EVALUATION (project-scoped, no org-level roles): project_id plus
