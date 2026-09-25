@@ -55,9 +55,10 @@ deploy-and-residency-hardening     (make it deployable + compliant once it has f
 5. **Vertical slices behind a green gate.** Each feature ships as one small PR that leaves
    `main` releasable; scope is steered between slices via `AskUserQuestion`.
 6. **Converge correctness.** An independent review loop, not a single pass, before merge.
-7. **Profile-gated data.** Local fixtures and offline CI use obviously fictional data. An
-   opt-in live profile may use public or audience-provided data only with explicit sign-off,
-   custody controls, tenant authorization and no silent fallback to fixtures.
+7. **Profile-gated data.** Local fixtures and offline CI use obviously fictional data. The
+   laptop `live` profile swaps the fake model for the shared local one and changes nothing
+   else; a lane that reads public or audience-provided data needs explicit sign-off, custody
+   controls, tenant authorization and no silent fallback to fixtures.
 
 Adapt the nouns to your domain; keep the principles.
 
