@@ -10,9 +10,12 @@ one returns an empty result, which is a fixture's honest answer, not a failure.
 
 from __future__ import annotations
 
+from hex_service_kit import provenance
+
 from ...config import Settings
 from ...domain.corpus import proposals_for
 from ...ports.extraction import ExtractionRequest, ExtractionResult
+from .generation import STUB_MODEL
 
 
 class LocalExtractionAdapter:
@@ -22,4 +25,6 @@ class LocalExtractionAdapter:
         self._settings = settings
 
     def extract(self, request: ExtractionRequest) -> ExtractionResult:
+        # It stands in for a model read, so the pill says a stub answered rather than nothing.
+        provenance.note_model(STUB_MODEL)
         return proposals_for(request.contract_id)

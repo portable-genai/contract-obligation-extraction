@@ -31,6 +31,11 @@ export const dynamic = "force-dynamic";
 
 const ALLOWED_METHODS = "GET, POST, OPTIONS";
 
+// The two answer-provenance headers the service emits (`install_answer_provenance`): which model
+// answered, and whether it searched. The console's model pills read them, so they are forwarded
+// verbatim when present and never invented when absent.
+const ANSWER_HEADERS = ["x-answered-by", "x-search-used"];
+
 interface RouteContext {
   params: Promise<{ path: string[] }>;
 }
@@ -82,6 +87,10 @@ async function forward(request: Request, context: RouteContext): Promise<Respons
   const out = new Headers(corsHeaders(request));
   out.set("Content-Type", upstream.headers.get("content-type") ?? "application/json");
   out.set("Cache-Control", "no-store");
+  for (const name of ANSWER_HEADERS) {
+    const value = upstream.headers.get(name);
+    if (value !== null) out.set(name, value);
+  }
   return new NextResponse(await upstream.text(), { status: upstream.status, headers: out });
 }
 
