@@ -5,10 +5,11 @@ This adapter is deliberately thin. All the OpenTelemetry work lives in ``hex_ser
 collector requires, and the rule that a tracing fault never becomes a request fault are implemented
 once for the whole fleet rather than per repo.
 
-Where spans go is a DEPLOYMENT fact, not a code fact, and it is read from
-``OTEL_EXPORTER_OTLP_ENDPOINT``: set, they go OTLP to the agent-observability collector, which
-redacts and aggregates; unset, straight to Cloud Trace. Both are supported, so this is one adapter
-and not two profiles.
+Spans go OTLP to the agent-observability collector named by ``OTEL_EXPORTER_OTLP_ENDPOINT``,
+which redacts GenAI content before anything reaches a Google sink. There is no direct Cloud Trace
+path: the commons refuses to build a tracer when that variable is unset or empty, so a ``gcp``
+deployment without a collector fails loudly on its first span instead of exporting around the
+redaction (decision D1 of the guardrail/registry/observability plan).
 
 The commons import is lazy for the usual reason (practice A5): the local and on-prem profiles
 import this package with no cloud SDK installed, and ``hex_service_kit.tracing`` itself imports
@@ -40,10 +41,7 @@ class CloudTracerAdapter:
         if self._delegate is None:
             from hex_service_kit.tracing import build_tracer  # noqa: PLC0415
 
-            self._delegate = build_tracer(
-                service=_SERVICE_NAME,
-                project=self._settings.project_id,
-            )
+            self._delegate = build_tracer(service=_SERVICE_NAME)
         return self._delegate
 
     def span(self, name: str, **attributes: str) -> AbstractContextManager[None]:
