@@ -3,7 +3,11 @@
 # Principle map (COMPLIANCE.md):
 #   P-09 (defence in depth, least privilege): one serving identity that holds only the roles
 #         the request pipeline needs (write audit entries, write traces, read its own secrets,
-#         call the narration model). No shared kitchen-sink account and no primitive roles.
+#         call the narration model, sanitize a prompt or response). No shared kitchen-sink
+#         account and no primitive roles.
+#   R1 (guardrail screening): modelarmor.user grants exactly the sanitize-only permission
+#         (`modelarmor.templates.useToSanitizeUserPrompt` / `...ModelResponse`), not a general
+#         Model Armor API grant.
 #   P-03 (residency): the identity is project-scoped and every service it reaches is regional.
 #   P-06 / R8: routing an escalation to the human-review-console is an outbound HTTPS call carrying a
 #         service credential from Secret Manager, not a GCP IAM role, so nothing is granted
@@ -35,6 +39,7 @@ locals {
   # produces a number or a verdict (the consequential decision is deterministic).
   app_roles = [
     "roles/logging.logWriter",            # audit.py (write only: it cannot read the WORM trail)
+    "roles/modelarmor.user",              # guardrail.py: sanitizeUserPrompt/sanitizeModelResponse
     "roles/cloudtrace.agent",             # tracer.py
     "roles/secretmanager.secretAccessor", # the inbound and outbound service credentials
     "roles/aiplatform.user",              # the narration surface a vertical binds

@@ -57,7 +57,9 @@ class _RecordingTracer:
 def _triage(case: TriageInput) -> _RecordingTracer:
     container = build_container(local_settings())
     tracer = _RecordingTracer()
-    TriageService(container.audit, tracer).triage(case, actor=sample_cases.ACTOR)  # type: ignore[arg-type]
+    TriageService(container.audit, tracer, container.guardrail).triage(  # type: ignore[arg-type]
+        case, actor=sample_cases.ACTOR
+    )
     return tracer
 
 

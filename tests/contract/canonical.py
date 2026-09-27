@@ -31,6 +31,8 @@ from contract_obligation_extraction.domain.kernel import (
     AuditEvent,
     Citation,
     Decision,
+    Direction,
+    GuardrailVerdict,
     Severity,
 )
 from contract_obligation_extraction.domain.models import (
@@ -69,6 +71,10 @@ CANONICAL_RESULT = TriageResult(
 
 #: The inbound transport context every identity implementation is handed.
 CANONICAL_CONTEXT = RequestContext(headers={"x-dev-persona": "auditor"})
+
+#: Benign text every guardrail implementation is handed: it must not match the local family's
+#: own block patterns, or the "offline family answers" case would look identical to a block.
+CANONICAL_GUARDRAIL_TEXT = "please summarise the register figures for the branch"
 
 #: The narration request every generation implementation is handed. It carries engine-owned facts
 #: for the model to restate; the offline family produces a real JSON note, the managed family's
@@ -167,6 +173,18 @@ def _evaluation_answered(adapter: Any, result: Any) -> bool:
     return isinstance(result, EvalReport) and result.dataset.endswith("canonical.jsonl")
 
 
+def _guardrail_invoke(adapter: Any) -> Any:
+    return adapter.screen(CANONICAL_GUARDRAIL_TEXT, Direction.INPUT)
+
+
+def _guardrail_answered(_adapter: Any, result: Any) -> bool:
+    return (
+        isinstance(result, GuardrailVerdict)
+        and result.allowed
+        and result.sanitized_text == CANONICAL_GUARDRAIL_TEXT
+    )
+
+
 CANONICAL_CALLS: dict[str, PortCase] = {
     "audit": PortCase(
         invoke=_audit_invoke,
@@ -174,6 +192,13 @@ CANONICAL_CALLS: dict[str, PortCase] = {
         # The lazy `google.cloud` import is the first thing the managed sink does.
         managed_refusal=(ImportError,),
         detail="write one already-redacted WORM record",
+    ),
+    "guardrail": PortCase(
+        invoke=_guardrail_invoke,
+        answered=_guardrail_answered,
+        # The lazy `google.cloud` import is the first thing the managed adapter does.
+        managed_refusal=(ImportError,),
+        detail="screen one benign generation call and allow it unchanged",
     ),
     "identity": PortCase(
         invoke=_identity_invoke,

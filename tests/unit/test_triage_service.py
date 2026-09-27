@@ -5,6 +5,9 @@ from __future__ import annotations
 from contract_obligation_extraction.adapters.local.audit import (
     LocalAuditAdapter,
 )
+from contract_obligation_extraction.adapters.local.guardrail import (
+    LocalHeuristicGuardrailAdapter,
+)
 from contract_obligation_extraction.adapters.local.tracer import (
     LocalNoopTracerAdapter,
 )
@@ -22,11 +25,16 @@ from contract_obligation_extraction.domain.triage_service import (
     TriageService,
 )
 
+#: These tests are about the audit chain and the scorer, not about the guardrail, so the
+#: service gets the offline heuristic (benign for every text this file feeds it -- the block
+#: path has its own test, tests/unit/test_guardrail_screening.py).
+_GUARDRAIL = LocalHeuristicGuardrailAdapter(Settings(profile="local"))
+
 
 def _service() -> tuple[TriageService, LocalAuditAdapter]:
     settings = Settings(profile="local", audit_path=":memory:")
     audit = LocalAuditAdapter(settings)
-    return TriageService(audit, LocalNoopTracerAdapter(settings)), audit
+    return TriageService(audit, LocalNoopTracerAdapter(settings), _GUARDRAIL), audit
 
 
 def _severity(text: str) -> Severity:

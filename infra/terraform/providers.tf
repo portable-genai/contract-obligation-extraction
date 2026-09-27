@@ -8,8 +8,9 @@
 #   P-02 (no lock-in): Terraform is the only place infrastructure is described. The app talks
 #         to ports, never to these resources.
 #
-# Only the GA google provider is required. Nothing in the baseline needs google-beta; a
-# vertical that adds a beta-only resource adds the second provider in the same commit.
+# The GA google provider covers everything but one resource: google_model_armor_template
+# (model_armor.tf, rule R1) is google-beta only on the pinned provider version. A vertical that
+# adds another beta-only resource keeps using this same provider rather than adding a third.
 #
 # NOTE for template maintainers: this file is copied into a render VERBATIM (it is listed in
 # cookiecutter.json `_copy_without_render`, as every *.tf and *.tftest.hcl here is), so keep
@@ -29,10 +30,19 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 7.0"
     }
+    google-beta = {
+      source  = "hashicorp/google-beta"
+      version = "~> 7.0"
+    }
   }
 }
 
 provider "google" {
+  project = var.project_id
+  region  = local.region # the selected, allowlisted region: pinned, never global
+}
+
+provider "google-beta" {
   project = var.project_id
   region  = local.region # the selected, allowlisted region: pinned, never global
 }

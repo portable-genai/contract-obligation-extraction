@@ -57,7 +57,7 @@ def _escalated() -> TriageResult:
     container = build_container(local_settings())
     from contract_obligation_extraction.domain.triage_service import TriageService
 
-    result = TriageService(container.audit, container.tracer).triage(
+    result = TriageService(container.audit, container.tracer, container.guardrail).triage(
         sample_cases.ESCALATING_CASE, actor=sample_cases.ACTOR
     )
     assert result.requires_human_review

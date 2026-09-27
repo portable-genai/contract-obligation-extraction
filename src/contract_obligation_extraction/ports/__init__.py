@@ -17,6 +17,7 @@ from hex_service_kit.identity import IdentityPort
 from .audit import AuditSinkPort
 from .extraction import ExtractionPort
 from .generation import GenerationPort
+from .guardrail import GuardrailPort
 from .identity import (
     CLIENT_ASSERTED,
     END_USER_AUTH_ATTR,
@@ -36,6 +37,7 @@ from .review_router import ReviewRouterPort
 #: port name (the key in the settings ``adapters:`` block) -> the Protocol it must satisfy.
 PORT_PROTOCOLS: dict[str, type] = {
     "audit": AuditSinkPort,
+    "guardrail": GuardrailPort,
     "identity": IdentityPort,
     "review_router": ReviewRouterPort,
     "generation": GenerationPort,
@@ -58,6 +60,7 @@ __all__ = [
     "EndUserAuthUnavailableError",
     "ExtractionPort",
     "GenerationPort",
+    "GuardrailPort",
     "IdentityPort",
     "ReviewRouterPort",
     "declared_end_user_auth",

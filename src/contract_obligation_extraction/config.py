@@ -56,6 +56,7 @@ from .envread import boolean_setting, setting_or_default
 from .ports.audit import AuditSinkPort
 from .ports.extraction import ExtractionPort
 from .ports.generation import GenerationPort
+from .ports.guardrail import GuardrailPort
 from .ports.identity import CLIENT_ASSERTED, declared_end_user_auth
 from .ports.observability import EvaluationGatePort, ObservabilityTracerPort
 from .ports.review_router import ReviewRouterPort
@@ -63,6 +64,12 @@ from .ports.review_router import ReviewRouterPort
 _PROFILE_ENV = "CONTRACT_PROFILE"
 _SETTINGS_ENV = "CONTRACT_SETTINGS"
 _REGION = "asia-southeast1"
+
+#: The guardrail class that calls a Model Armor template, and so needs one named at boot
+#: whenever the guardrail control is on under a managed profile (see
+#: ``_refuse_unconfigured_controls``). A deployment that rebinds ``guardrail`` to some other
+#: class under ``gcp`` is not required to name a template here.
+_MODEL_ARMOR_GUARDRAIL = "ModelArmorGuardrailAdapter"
 
 #: Where the settings file is looked for when the env var names none. Relative to the process
 #: working directory, which is the repo root for ``make`` targets and ``/app`` in the image.
@@ -304,6 +311,11 @@ DEFAULT_BINDINGS: dict[str, dict[str, str]] = {
         "gcp": f"{_PKG}.adapters.gcp.generation:CloudGenerationAdapter",
         "onprem": f"{_PKG}.adapters.onprem.generation:OnPremGenerationAdapter",
     },
+    "guardrail": {
+        "local": f"{_PKG}.adapters.local.guardrail:LocalHeuristicGuardrailAdapter",
+        "gcp": f"{_PKG}.adapters.gcp.guardrail:ModelArmorGuardrailAdapter",
+        "onprem": f"{_PKG}.adapters.onprem.guardrail:OnPremGuardrailAdapter",
+    },
     "extraction": {
         "local": f"{_PKG}.adapters.local.extraction:LocalExtractionAdapter",
         "gcp": f"{_PKG}.adapters.gcp.extraction:CloudExtractionAdapter",
@@ -395,6 +407,13 @@ def _bindings_from(data: Mapping[str, Any]) -> dict[str, dict[str, str]]:
 #: an emptied or unrecognised value refuses at boot. See the fleet's runtime-control contract.
 REVIEW_ROUTING_ENV = "CONTRACT_REVIEW_ROUTING"
 
+#: The switch for the guardrail (rule R1), read the same three-state way. Every generation call
+#: the domain narrates is screened input-before / output-after (``domain/triage_service.py``,
+#: ``domain/narration.py``) while this is on; off binds
+#: :class:`~.adapters.controls.DisabledGuardrail`, which allows everything, and the container
+#: logs the posture at startup exactly like review routing.
+GUARDRAIL_ENV = "CONTRACT_GUARDRAIL"
+
 _log = logging.getLogger(__name__)
 
 
@@ -403,14 +422,45 @@ class ControlSwitches:
     """Which cheap runtime controls this process runs. Every one defaults on."""
 
     review_routing: bool = True
+    guardrail: bool = True
 
     @classmethod
     def from_env(cls) -> ControlSwitches:
-        return cls(review_routing=boolean_setting(REVIEW_ROUTING_ENV, default=True))
+        return cls(
+            review_routing=boolean_setting(REVIEW_ROUTING_ENV, default=True),
+            guardrail=boolean_setting(GUARDRAIL_ENV, default=True),
+        )
 
     def switched_off(self) -> tuple[str, ...]:
         """The environment variables of every control that is off, for the startup warning."""
-        return () if self.review_routing else (REVIEW_ROUTING_ENV,)
+        states = ((REVIEW_ROUTING_ENV, self.review_routing), (GUARDRAIL_ENV, self.guardrail))
+        return tuple(name for name, on in states if not on)
+
+
+@dataclass(frozen=True)
+class ModelArmorSettings:
+    """Which regional Model Armor template the ``gcp`` guardrail adapter calls (rule R1, P-05).
+
+    ``template_id`` has a REAL default, matching the one ``infra/terraform/model_armor.tf``
+    creates (``contract-obligation-extraction-guardrail``), so a zero-edit render names a
+    template its own Terraform provisions rather than an empty string nothing would ever
+    satisfy. ``host`` is the regional endpoint (never the global one), pinned to the region this
+    repo runs in. ``timeout_seconds`` is the deadline on every sanitize call: without one a
+    stalled backend holds the request for the client library's own default, and the guardrail
+    fails CLOSED on the timeout like on any other error, so a short deadline refuses rather than
+    admits.
+    """
+
+    template_id: str = "contract-obligation-extraction-guardrail"
+    host: str = f"modelarmor.{_REGION}.rep.googleapis.com"
+    timeout_seconds: float = 10.0
+
+    def __post_init__(self) -> None:
+        value = self.timeout_seconds
+        if isinstance(value, bool) or not isinstance(value, int | float) or value <= 0:
+            raise ValueError(
+                f"model_armor.timeout_seconds must be a positive number of seconds, got {value!r}"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -430,6 +480,9 @@ class Settings:
     review_url: str = ""
     #: Which cheap runtime controls run; see :class:`ControlSwitches`.
     controls: ControlSwitches = field(default_factory=ControlSwitches)
+    #: Which Model Armor template the ``gcp`` guardrail adapter calls, and on which regional
+    #: host; see :class:`ModelArmorSettings`.
+    model_armor: ModelArmorSettings = field(default_factory=ModelArmorSettings)
     #: The audience the managed IAP identity adapter verifies the signed assertion AGAINST: the
     #: IAP-protected resource, ``/projects/<NUM>/global/backendServices/<ID>`` behind an HTTPS
     #: load balancer. It is CONFIGURATION rather than a literal because it is per-deployment, and
@@ -539,16 +592,20 @@ class Settings:
             project_id=str(data.get("project_id") or ""),
             adapters=_bindings_from(data),
             controls=ControlSwitches.from_env(),
+            model_armor=ModelArmorSettings(**(data.get("model_armor") or {})),
         )
         _refuse_unconfigured_controls(settings)
         return settings
 
 
 def _refuse_unconfigured_controls(settings: Settings) -> None:
-    """Review routing on under the managed profile must name its console, checked at boot.
+    """A control that is on under the managed profile must be able to work, checked at boot.
 
-    The managed router used to discover a missing ``review_url`` on the first escalation and
-    fail that request; the configuration error belongs at startup, with the two ways out.
+    Review routing on with no console named would otherwise fail on the first escalation, after
+    the result had already been scored and audited. The guardrail on with the Model Armor
+    adapter bound and no template named would build a malformed template path at the first
+    screen call, past the point the input has already been narrated toward. Both are
+    configuration errors, so both refuse here, with the two ways out for each.
     """
     if settings.profile not in _MANAGED_PROFILES:
         return
@@ -557,6 +614,17 @@ def _refuse_unconfigured_controls(settings: Settings) -> None:
             f"Review routing is on under profile {settings.profile!r} but HUMAN_REVIEW_URL "
             f"(config/settings.yaml review_url) is not set. Name the human-review-console base "
             f"URL, or set {REVIEW_ROUTING_ENV}=off to run without routing."
+        )
+    guardrail_binding = settings.adapters.get("guardrail", {}).get(settings.profile, "")
+    if (
+        settings.controls.guardrail
+        and guardrail_binding.endswith(f":{_MODEL_ARMOR_GUARDRAIL}")
+        and not settings.model_armor.template_id.strip()
+    ):
+        raise ConfiguredEmptyError(
+            f"The guardrail is on under profile {settings.profile!r} but no Model Armor "
+            f"template is configured (config/settings.yaml model_armor.template_id). Name "
+            f"one, or set {GUARDRAIL_ENV}=off to run without it."
         )
 
 
@@ -577,6 +645,16 @@ class Container:
     def audit(self) -> AuditSinkPort:
         adapter = self._bind("audit")
         assert isinstance(adapter, AuditSinkPort)
+        return adapter
+
+    @cached_property
+    def guardrail(self) -> GuardrailPort:
+        if not self.settings.controls.guardrail:
+            from .adapters.controls import DisabledGuardrail
+
+            return DisabledGuardrail(self.settings)
+        adapter = self._bind("guardrail")
+        assert isinstance(adapter, GuardrailPort)
         return adapter
 
     @cached_property

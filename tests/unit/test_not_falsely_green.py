@@ -29,6 +29,9 @@ from pii_kit import pack_leak
 from contract_obligation_extraction.adapters.local.audit import (
     LocalAuditAdapter,
 )
+from contract_obligation_extraction.adapters.local.guardrail import (
+    LocalHeuristicGuardrailAdapter,
+)
 from contract_obligation_extraction.adapters.local.tracer import (
     LocalNoopTracerAdapter,
 )
@@ -101,7 +104,8 @@ def test_the_metric_is_green_over_a_real_service_run() -> None:
     """
     settings = local_settings()
     audit = LocalAuditAdapter(settings)
-    TriageService(audit, LocalNoopTracerAdapter(settings)).triage(PII_CASE, actor=ACTOR)
+    guardrail = LocalHeuristicGuardrailAdapter(settings)
+    TriageService(audit, LocalNoopTracerAdapter(settings), guardrail).triage(PII_CASE, actor=ACTOR)
 
     texts = ev.audit_texts(audit.log.read_all())
     assert texts, "the scan read no audit content at all"

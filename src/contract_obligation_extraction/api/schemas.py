@@ -108,6 +108,11 @@ class RegisterResponse(BaseModel):
     #: figure in it comes from the engine, never the model.
     note: str = ""
     note_model_authored: bool = False
+    #: True when the guardrail (rule R1) blocked either direction of the narration call and the
+    #: fallback text above is why, not a technical failure, malformed JSON or an ungrounded
+    #: figure. The block itself is separately audited (``flow.py``); this is what lets a caller
+    #: see it happened without reading the WORM trail.
+    note_guardrail_blocked: bool = False
     #: Where the escalation WENT (rule R8): the human-review-console review id or the local queue
     #: reference. Empty exactly when ``review_routing`` is not ``routed``.
     review_ref: str = ""
@@ -144,6 +149,7 @@ class RegisterResponse(BaseModel):
             as_of=register.as_of.isoformat(),
             note=note.text,
             note_model_authored=note.model_authored,
+            note_guardrail_blocked=note.guardrail_blocked,
             review_ref=review_ref,
             review_routing=review_routing,  # type: ignore[arg-type]
             citations=[

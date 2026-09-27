@@ -16,6 +16,16 @@ a person, and the extractor lifts both verbatim. Downstream of here that text re
 (the narration model, the WORM audit record, the outbound human-review-console payload and the API
 response), so it is masked ONCE, here, rather than four times at four sinks that each have to
 remember. See :func:`_redacted_document` and :func:`_redacted_proposals`.
+
+Rule R1 sits here too, around BOTH generation calls this path makes. The extraction read is the
+bigger exposure (a contract is counterparty-written text fed straight to a model), so the text the
+extractor reads is screened INPUT before the port is called, and everything it proposes is screened
+OUTPUT before the engine admits any of it. A refusal there is audited ``Decision.BLOCKED`` and
+raises :class:`~.domain.errors.GuardrailBlockedError`: the register is never built from a partial
+or unscreened read. A guardrail that cannot decide fails closed the same way, audited, and its own
+error reaches the caller. The narration call is screened inside
+:class:`~.domain.narration.NarrationService`; it is decorative by design, so a refusal there falls
+back to the fixed engine-built text and is audited here as its own BLOCKED record.
 """
 
 from __future__ import annotations
@@ -28,13 +38,21 @@ from pii_kit import redact
 from .adapters.controls import RecordingReviewRouter
 from .config import Container
 from .domain.contracts import Contract, ContractRegister, RegisterService
+from .domain.errors import GuardrailBlockedError
+from .domain.kernel import AuditEvent, Decision, Direction, GuardrailVerdict, utcnow
 from .domain.kernel import Citation as AuditCitation
 from .domain.models import TriageResult
 from .domain.narration import NarratedNote, NarrationService
 from .domain.pii import PII_PATTERNS
 from .ports.extraction import ClauseInput, ExtractionRequest, ExtractionResult
 
-__all__ = ["RegisterOutcome", "extraction_request_for", "run_contract_register"]
+__all__ = [
+    "RegisterOutcome",
+    "extraction_prompt",
+    "extraction_request_for",
+    "proposals_text",
+    "run_contract_register",
+]
 
 #: One span per contract read. Structural attributes only: see :func:`run_contract_register`.
 _REGISTER_SPAN = "obligations.register"
@@ -69,6 +87,90 @@ def extraction_request_for(contract: Contract) -> ExtractionRequest:
             )
             for clause in contract.clauses()
         ),
+    )
+
+
+def extraction_prompt(request: ExtractionRequest) -> str:
+    """The text the extraction model reads: the counterparty and every clause, joined as sent.
+
+    Screened whole, not clause by clause: an instruction split across two clauses passes each
+    clause's screen, and only a screen of the text the model actually reads sees it whole.
+    """
+    parts = [request.counterparty]
+    parts.extend(f"{c.number} {c.heading}\n{c.text}" for c in request.clauses)
+    return "\n\n".join(parts)
+
+
+def proposals_text(result: ExtractionResult) -> str:
+    """Every string the extractor proposed, one per line: what the OUTPUT screen reads.
+
+    The anchors, dates and flag strings are validated by the engine anyway, but they are still
+    model output, so they are screened with the free text rather than trusted for their shape.
+    """
+    lines: list[str] = []
+    for candidate in result.candidates:
+        lines.extend(
+            (
+                candidate.text,
+                candidate.clause_anchor,
+                candidate.owner,
+                candidate.due_on,
+                candidate.due_kind,
+                *candidate.proposed_flags,
+            )
+        )
+    return "\n".join(line for line in lines if line)
+
+
+def _screen_extraction(
+    container: Container, text: str, direction: Direction, *, contract: Contract, actor: str
+) -> None:
+    """Screen one direction of the extraction call; return only if it passed untouched.
+
+    The extraction request and result are STRUCTURED, so a screen that hands back rewritten
+    text (a redaction) cannot be mapped back onto the clauses or the candidates it came from.
+    That is refused like a block rather than sending, or admitting, the unscreened original.
+    A guardrail that raised has not decided: the refusal is audited, then its error propagates.
+    """
+    try:
+        verdict: GuardrailVerdict = container.guardrail.screen(text, direction)
+    except Exception as exc:
+        reason = f"guardrail unavailable ({type(exc).__name__})"
+        try:
+            _audit_extraction_blocked(container, contract, direction, reason, actor=actor)
+        except Exception as audit_exc:
+            exc.add_note(f"the BLOCKED audit record could not be written: {audit_exc!r}")
+        raise
+    if verdict.allowed and verdict.sanitized_text == text:
+        return
+    if verdict.allowed:
+        reason = "guardrail rewrote the structured extraction text; refused, not sent unscreened"
+    else:
+        reason = verdict.reason or f"extraction {direction.value} blocked by guardrail"
+    _audit_extraction_blocked(container, contract, direction, reason, actor=actor)
+    raise GuardrailBlockedError(reason)
+
+
+def _audit_extraction_blocked(
+    container: Container, contract: Contract, direction: Direction, reason: str, *, actor: str
+) -> None:
+    """Audit an extraction refusal BEFORE the raise reaches the caller (rule R1/P-04).
+
+    Names the contract by its id, never by its counterparty or any clause text, because that
+    text is what was refused. Severity is ``None``: nothing was scored.
+    """
+    container.audit.record(
+        AuditEvent(
+            action="contract_register_extraction",
+            actor=actor,
+            decision=Decision.BLOCKED,
+            severity=None,
+            redacted_summary=(
+                f"{contract.contract_id}: extraction blocked ({direction.value}): {reason}"
+            ),
+            citations=(),
+            timestamp=utcnow(),
+        )
     )
 
 
@@ -115,6 +217,30 @@ def _redacted_proposals(result: ExtractionResult) -> ExtractionResult:
             for candidate in result.candidates
         ),
         model=result.model,
+    )
+
+
+def _audit_narration_blocked(
+    container: Container, register: ContractRegister, note: NarratedNote, *, actor: str
+) -> None:
+    """Record the narration guardrail refusal as its own audited event (rule R1/P-04).
+
+    The register itself was already built and audited by :class:`RegisterService` before
+    narration ran, so this is a SECOND, distinct record: a blocked generation call is a
+    security-relevant event the WORM trail must hold even though the register it decorates was
+    admitted and audited normally. It never carries the screened text, only that a block
+    happened and why.
+    """
+    container.audit.record(
+        AuditEvent(
+            action="contract_register_narration",
+            actor=actor,
+            decision=Decision.BLOCKED,
+            severity=register.severity,
+            redacted_summary=f"{register.subject}: narration blocked: {note.guardrail_reason}",
+            citations=(),
+            timestamp=utcnow(),
+        )
     )
 
 
@@ -170,6 +296,11 @@ def run_contract_register(
     :func:`_redacted_document`), so the narration model, the audit record, the human-review-console
     payload and
     the response are all covered by one redaction rather than by four that must agree.
+
+    Raises :class:`~.domain.errors.GuardrailBlockedError` when the guardrail refuses the
+    extraction read in either direction (rule R1), after the refusal is audited; a guardrail
+    that could not decide re-raises its own error, also after the audit. Nothing is built,
+    narrated or routed in either case.
     """
     with container.tracer.span(
         _REGISTER_SPAN,
@@ -178,14 +309,25 @@ def run_contract_register(
         tenant=tenant or contract.tenant,
         family=contract.family.value,
     ):
-        proposals = container.extraction.extract(extraction_request_for(contract))
+        request = extraction_request_for(contract)
+        # Rule R1: the read is screened as the model receives it, and its proposals before the
+        # engine admits any of them. Either refusal is audited and raised; nothing is built.
+        _screen_extraction(
+            container, extraction_prompt(request), Direction.INPUT, contract=contract, actor=actor
+        )
+        proposals = container.extraction.extract(request)
+        _screen_extraction(
+            container, proposals_text(proposals), Direction.OUTPUT, contract=contract, actor=actor
+        )
         register = RegisterService(container.audit).build(
             _redacted_document(contract),
             _redacted_proposals(proposals),
             as_of=as_of,
             actor=actor,
         )
-        note = NarrationService(container.generation).narrate(register)
+        note = NarrationService(container.generation, container.guardrail).narrate(register)
+        if note.guardrail_blocked:
+            _audit_narration_blocked(container, register, note, actor=actor)
         # The hand-off never fails an already-built, already-audited register; the outcome says
         # what happened to it instead (the fleet's runtime-control contract).
         routing = RecordingReviewRouter(container.review_router)

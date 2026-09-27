@@ -121,7 +121,7 @@ def test_the_payload_that_reaches_the_wire_is_redacted_whichever_family_built_it
     demo.
     """
     wire_container = build_container(local_settings())
-    service = TriageService(wire_container.audit, wire_container.tracer)
+    service = TriageService(wire_container.audit, wire_container.tracer, wire_container.guardrail)
     result = service.triage(sample_cases.PII_CASE, actor=sample_cases.ACTOR)
     payload = repr(
         result_to_review(result, maker=sample_cases.ACTOR, tenant=sample_cases.TENANT).to_payload()
@@ -135,7 +135,7 @@ def test_the_payload_that_reaches_the_wire_is_redacted_whichever_family_built_it
 # --------------------------------------------------------------------------- #
 def test_the_whole_pipeline_answers_on_local_and_fails_fast_on_onprem() -> None:
     local = build_container(local_settings())
-    result = TriageService(local.audit, local.tracer).triage(
+    result = TriageService(local.audit, local.tracer, local.guardrail).triage(
         sample_cases.ESCALATING_CASE, actor=sample_cases.ACTOR
     )
     assert result.requires_human_review is True
@@ -144,6 +144,6 @@ def test_the_whole_pipeline_answers_on_local_and_fails_fast_on_onprem() -> None:
 
     onprem = build_container(local_settings(profile="onprem"))
     with pytest.raises(NotImplementedError):
-        TriageService(onprem.audit, onprem.tracer).triage(
+        TriageService(onprem.audit, onprem.tracer, onprem.guardrail).triage(
             sample_cases.ESCALATING_CASE, actor=sample_cases.ACTOR
         )

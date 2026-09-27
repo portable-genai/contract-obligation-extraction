@@ -153,6 +153,54 @@ response carries `review_routing: "failed"` and an empty reference, the failure 
 the console says the item is not queued for review. Terraform states the switch as
 `review_routing_enabled`.
 
+## Guardrail (rule R1)
+`ports/guardrail.py` screens every generation call, input before and output after, and each
+screen's `sanitized_text` is the text used from then on, exactly as given:
+
+- **The extraction read** (`flow.py`): the counterparty and every clause, joined as the model
+  reads them, INPUT before `ExtractionPort` is called; every string it proposes OUTPUT before the
+  engine admits any of it. A refusal is audited `Decision.BLOCKED` (action
+  `contract_register_extraction`, no severity, the contract named by id only) and refuses the
+  whole register: the API answers 400, the CLI prints to stderr and exits 1, and the agent tool
+  returns `{"blocked": true, "reason": <str>}`. The request and result are structured, so a
+  screen that REWRITES the text (a redaction) is refused too rather than sent or admitted
+  unscreened.
+- **The register narration** (`domain/narration.py`): the prompt INPUT, the model's raw text
+  OUTPUT. The note is decorative, so a refusal falls back to the fixed engine-built text,
+  `note_guardrail_blocked` says so, and `flow.py` audits it as its own `BLOCKED` record
+  (action `contract_register_narration`).
+- **Triage** (`domain/triage_service.py`): the subject and the text, each alone and then joined,
+  INPUT before anything is scored; the narrated summary OUTPUT before it is audited or returned.
+  A refusal is audited `BLOCKED` and answers exactly as the extraction read does.
+
+Under `gcp` the screen is a regional Model Armor template (`config/settings.yaml`
+`model_armor.template_id`, on the regional host `model_armor.host`, never the global endpoint);
+`infra/terraform/model_armor.tf` creates it, gated on `var.model_armor_full_capabilities` for the
+malicious-URI filter and multi-language detection. `asia-southeast1` refuses the malicious-URI
+filter, so a deployment there sets `model_armor_full_capabilities = false`
+(`terraform.tfvars.example`).
+
+The managed guardrail fails CLOSED. It allows only on an explicit `NO_MATCH_FOUND` from a screen
+where every filter ran (`invocation_result` `SUCCESS`); a match, an absent or undecided result, a
+`PARTIAL` or `FAILURE` screen (a filter skipped for size or language, or erroring, reports no
+match), and any API error all refuse, and every call carries a deadline
+(`model_armor.timeout_seconds`, 10 s by default). A guardrail that raised instead of deciding is
+audited `BLOCKED` with `guardrail unavailable (<error>)`; on the extraction and triage paths its
+own error then reaches the caller (a 500 from the API), on the narration path the note falls back.
+A filter skips text past its token limit, so size the managed extraction read (chunk it) before
+enabling it, or every long contract is refused.
+
+`CONTRACT_GUARDRAIL` switches the guardrail, read in the same three states as review routing:
+unset is on, `true`/`false` (or `on`/`off`) wins, and an emptied or unrecognised value refuses at
+boot. Off binds `DisabledGuardrail`, which allows everything unchanged, and logs one warning at
+startup. With the guardrail on and no Model Armor template configured, the managed profile
+REFUSES TO BOOT. Terraform states the switch as `guardrail_enabled`.
+
+`tests/unit/test_model_armor_mapping.py` drives the adapter with the real `modelarmor_v1` types
+and skips in the SDK-free gate. After any change to the adapter or to the SDK pin, run it against
+the runtime lock with `CONTRACT_REQUIRE_MODEL_ARMOR_SDK=1`, which turns a missing SDK into an
+error instead of a skip.
+
 ## Supply chain
 Installs come from the committed lockfiles. After changing a dependency run `make lock` and commit
 both files, then `make audit` (`pip-audit` over both locks). CI runs the same audit as a hard
@@ -201,4 +249,5 @@ and, when `HUMAN_REVIEW_URL` is set, submits one fictional review to the live co
 
 ## Alerts
 Alert on guardrail blocks, key creation, and VPC-SC perimeter denials (see the
-deploy-and-residency-hardening skill).
+deploy-and-residency-hardening skill). `infra/terraform/monitoring.tf` carries each as a
+log-based metric; `guardrail_blocks` matches every audit record with decision `blocked`.

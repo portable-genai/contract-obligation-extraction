@@ -41,6 +41,9 @@ from contract_obligation_extraction.adapters.local.audit import (
 from contract_obligation_extraction.adapters.local.generation import (
     LocalGenerationAdapter,
 )
+from contract_obligation_extraction.adapters.local.guardrail import (
+    LocalHeuristicGuardrailAdapter,
+)
 from contract_obligation_extraction.adapters.local.review_router import (
     LocalReviewRouter,
 )
@@ -275,7 +278,9 @@ def test_the_locator_path_is_masked_when_the_subject_carries_the_identifier() ->
     """A citation locator is built from client text (``case:<subject>``), so it is content."""
     settings = local_settings()
     audit = LocalAuditAdapter(settings)
-    service = TriageService(audit, LocalNoopTracerAdapter(settings))
+    service = TriageService(
+        audit, LocalNoopTracerAdapter(settings), LocalHeuristicGuardrailAdapter(settings)
+    )
     result = service.triage(PII_SUBJECT_CASE, actor=ACTOR)
 
     rows = list(audit.log.read_all())
@@ -301,7 +306,11 @@ def test_the_review_source_key_is_stable_so_a_retry_stays_idempotent() -> None:
     on the console, and the collapse trade-off is only defensible while the key is stable.
     """
     settings = local_settings()
-    service = TriageService(LocalAuditAdapter(settings), LocalNoopTracerAdapter(settings))
+    service = TriageService(
+        LocalAuditAdapter(settings),
+        LocalNoopTracerAdapter(settings),
+        LocalHeuristicGuardrailAdapter(settings),
+    )
     result = service.triage(PII_SUBJECT_CASE, actor=ACTOR)
 
     keys = {result_to_review(result, maker=ACTOR, tenant=TENANT).source_key for _ in range(200)}

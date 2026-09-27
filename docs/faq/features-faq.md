@@ -81,7 +81,7 @@ version stable so a later change is deliberate and reviewed.
 | Model and agent promotion | `model-quality-gate` AI quality and model risk | `eval/run_eval.py --mode gate` asks `model-quality-gate`; the offline smoke mode never promotes. |
 | Traces and the immutable audit sink | `agent-observability` agent observability | `AuditSinkPort` and `ObservabilityTracerPort`. |
 | Human review and maker-checker | `human-review-console` human review console | `ReviewRouterPort` over the shared `review-kit`. Every ambiguous flag proposal lands here. |
-| Prompt-injection defence and output filtering | `agent-guardrail-gateway` agent guardrail gateway | **not wired today, and this repo needs it most.** A contract is untrusted third-party text that reaches a model (rule R1). |
+| Prompt-injection defence and output filtering | `agent-guardrail-gateway` agent guardrail gateway | `GuardrailPort`: a regional Model Armor template under `gcp`, screening the extraction read and the narration in both directions (rule R1). A contract is untrusted third-party text that reaches a model. |
 | Grounded retrieval over an enterprise corpus | `enterprise-knowledge-base` | not wired; the document itself is the context. |
 
 ### Can I demo it without a cloud project?
@@ -97,6 +97,6 @@ screenshots.
 
 The honest list is [`../practices-audit.md`](../practices-audit.md) and the `TODO (repo owner)`
 rows in [`../../COMPLIANCE.md`](../../COMPLIANCE.md). The three that matter most: the managed
-`ExtractionPort` adapter is a declared seam that raises rather than a working Document AI client,
-the `agent-guardrail-gateway` is not bound in front of it, and this repo's metric bundle is not registered
-with `model-quality-gate`.
+`ExtractionPort` adapter is a declared seam that raises rather than a working Document AI client
+(the guardrail screen in front of it is wired, and must be sized for it), and this repo's metric
+bundle is not registered with `model-quality-gate`.

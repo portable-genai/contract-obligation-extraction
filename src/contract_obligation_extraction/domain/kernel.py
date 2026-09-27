@@ -36,6 +36,64 @@ class Severity(LenientStrEnum):
 class Decision(LenientStrEnum):
     ALLOWED = "allowed"
     ESCALATED = "escalated"  # routed to a human (maker-checker, P-06)
+    BLOCKED = "blocked"  # refused by the guardrail (rule R1); nothing built on the refused text
+
+
+# --------------------------------------------------------------------------- #
+# Safety (guardrail): the A1 Guardrail Gateway concerns, vertical-neutral (rule R1)
+# --------------------------------------------------------------------------- #
+class Direction(LenientStrEnum):
+    """Which leg of a generation call a guardrail screen covers."""
+
+    INPUT = "input"
+    OUTPUT = "output"
+
+
+class GuardrailCategory(LenientStrEnum):
+    """What kind of thing a guardrail finding names. A fork adds to this; it never removes."""
+
+    PROMPT_INJECTION = "prompt_injection"
+    JAILBREAK = "jailbreak"
+    SENSITIVE_DATA = "sensitive_data"
+    MALICIOUS_URL = "malicious_url"
+    OTHER = "other"
+
+
+@dataclass(frozen=True, slots=True)
+class GuardrailFinding:
+    """One thing a guardrail screen noticed, never the whole verdict on its own."""
+
+    category: GuardrailCategory
+    confidence: str  # "low" | "medium" | "high"
+    detail: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class GuardrailVerdict:
+    """What a guardrail screen decided about one direction of one generation call.
+
+    ``sanitized_text`` is the text to use going forward when ``allowed`` is True: it may equal
+    the input unchanged, and it may be SHORTER or EMPTY when the screen redacted it, and the
+    caller uses it exactly as given, never falling back to the unscreened original. It is
+    ``None`` when the call is blocked, because a blocked call has no safe text to substitute.
+    Both halves are enforced at construction, so a verdict that is allowed with no text (or
+    blocked with some) cannot exist for a caller to misread.
+    """
+
+    allowed: bool
+    direction: Direction
+    findings: tuple[GuardrailFinding, ...] = ()
+    sanitized_text: str | None = None
+    reason: str = ""
+
+    def __post_init__(self) -> None:
+        if self.allowed and self.sanitized_text is None:
+            raise ValueError(
+                "an allowed GuardrailVerdict must carry the text to use going forward "
+                "(sanitized_text, the input unchanged when nothing was redacted)"
+            )
+        if not self.allowed and self.sanitized_text is not None:
+            raise ValueError("a blocked GuardrailVerdict carries no sanitized_text")
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,12 +139,16 @@ class AuditEvent:
     ``actor`` is NOT masked. It is the verified principal and is an address by design: it is
     attribution, not content, and masking it would erase the only column that says who acted.
     That is also why a leak scan runs over the content fields rather than over a whole row.
+
+    ``severity`` is ``None`` only on a record for a request that was never scored: an INPUT
+    blocked (or left undecided) by the guardrail before the severity was computed. Recording a
+    band there would state a score nothing produced.
     """
 
     action: str
     actor: str
     decision: Decision
-    severity: Severity
+    severity: Severity | None
     redacted_summary: str
     citations: tuple[Citation, ...] = ()
     timestamp: datetime = field(default_factory=utcnow)

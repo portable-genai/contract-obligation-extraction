@@ -80,6 +80,16 @@ production_edge_enabled = false
 # Cheap runtime control, on in the reference; false runs without routing and needs no console.
 review_routing_enabled = true
 
+# Rule R1: the Model Armor guardrail template (model_armor.tf). model_armor_full_capabilities
+# asks for the two filters that are not served in every region, the malicious-URI filter and
+# multi-language detection, and defaults to true. Model Armor does not degrade: a region that
+# does not serve them refuses the WHOLE template with CAPABILITY_NOT_SUPPORTED. asia-southeast1
+# refuses the malicious-URI filter, so a deployment there must set this false and disclose the
+# narrowed guardrail (prompt injection, jailbreak and the RAI filters still run).
+model_armor_full_capabilities = false # asia-southeast1 refuses the malicious-URI filter
+# Cheap runtime control, on in the reference; false runs the service with no screening at all.
+guardrail_enabled = true
+
 # Rule R5 and rule R2: the model-quality-gate promotion authority and the agent-observability collector. Leave a
 # variable out entirely rather than setting it to an empty string; empty is read as a
 # deliberate "no authority named" and refuses.
