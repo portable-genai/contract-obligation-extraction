@@ -25,6 +25,7 @@ from pii_kit import redact
 from ..adapters.controls import RecordingReviewRouter
 from ..config import Container, Settings, build_container
 from ..domain.corpus import AS_OF, contract_by_id
+from ..domain.errors import GuardrailBlockedError
 from ..domain.models import TriageInput
 from ..domain.pii import PII_PATTERNS
 from ..domain.triage_service import TriageService
@@ -84,10 +85,17 @@ def triage_case(
       goes into a model's context), plus ``review_ref``: where the escalation WENT, and
       ``review_routing``: routed, failed, off or not_required. The reference is empty unless the
       hand-off was routed, so a caller can tell a routed escalation from one that stopped here.
+      When the guardrail blocks either direction of the call (rule R1), the block is already
+      audited and this returns ``{"blocked": True, "reason": <str>}`` instead: never a partial
+      triage.
     """
     container = _container(settings)
     case = TriageInput(subject=subject, text=text)
-    result = TriageService(container.audit, container.tracer).triage(case, actor=actor)
+    service = TriageService(container.audit, container.tracer, container.guardrail)
+    try:
+        result = service.triage(case, actor=actor)
+    except GuardrailBlockedError as exc:
+        return {"blocked": True, "reason": str(exc)}
     routing = RecordingReviewRouter(container.review_router)
     review_ref = routing.route(result, maker=actor, tenant=tenant)
     payload = _redacted(to_jsonable(result))
@@ -125,15 +133,20 @@ def extract_contract_register(
       into a model's context), plus ``review_ref``: where the escalation WENT, and
       ``review_routing``: routed, failed, off or not_required. The reference is empty unless the
       hand-off was routed. The versioned third-party-risk-ddq feed envelope is included under
-      ``feed``.
+      ``feed``. When the guardrail refuses the extraction read in either direction (rule R1), the
+      refusal is already audited and this returns ``{"blocked": True, "reason": <str>}``
+      instead: never a partial register.
     """
     contract = contract_by_id(contract_id)
     if contract is None:
         return {"error": f"no contract {contract_id!r} in the corpus"}
     resolved_as_of = date.fromisoformat(as_of) if as_of else AS_OF
-    outcome = run_contract_register(
-        _container(settings), contract, as_of=resolved_as_of, actor=actor, tenant=tenant
-    )
+    try:
+        outcome = run_contract_register(
+            _container(settings), contract, as_of=resolved_as_of, actor=actor, tenant=tenant
+        )
+    except GuardrailBlockedError as exc:
+        return {"blocked": True, "reason": str(exc)}
     reg = outcome.register
     payload: dict[str, Any] = {
         "contract_id": reg.contract_id,
@@ -154,6 +167,8 @@ def extract_contract_register(
         ],
         "dropped": list(reg.dropped),
         "summary": outcome.note.text,
+        # True when the guardrail refused the narration and the summary is the fixed fallback.
+        "summary_guardrail_blocked": outcome.note.guardrail_blocked,
         "feed": to_jsonable(reg.snapshot),
     }
     masked = _redacted(payload)

@@ -8,6 +8,9 @@ fallback (which is grounded by construction), and the fallback still carries the
 from __future__ import annotations
 
 from contract_obligation_extraction.adapters.local.audit import LocalAuditAdapter
+from contract_obligation_extraction.adapters.local.guardrail import (
+    LocalHeuristicGuardrailAdapter,
+)
 from contract_obligation_extraction.config import Settings
 from contract_obligation_extraction.domain.contracts import RegisterService
 from contract_obligation_extraction.domain.corpus import AS_OF, contract_by_id, proposals_for
@@ -22,6 +25,11 @@ from contract_obligation_extraction.ports.generation import (
     GenerationRequest,
     GenerationResponse,
 )
+
+#: These tests are about parsing, groundedness and the fallback, not about the guardrail, so
+#: they get the offline heuristic (benign for every text this file feeds it -- the block path
+#: has its own test, tests/unit/test_guardrail_screening.py).
+_GUARDRAIL = LocalHeuristicGuardrailAdapter(Settings(profile="local"))
 
 
 class _Hallucinator:
@@ -50,14 +58,14 @@ def _register(contract_id: str):
 def test_a_grounded_model_note_is_kept() -> None:
     reg = _register("meridian-msa-2026")
     port: GenerationPort = LocalGenerationAdapterFactory()
-    note = NarrationService(port).narrate(reg)
+    note = NarrationService(port, _GUARDRAIL).narrate(reg)
     assert note.grounded is True
     assert note_is_grounded(note.text, build_request(reg).facts)
 
 
 def test_a_hallucinated_figure_is_discarded_for_the_grounded_fallback() -> None:
     reg = _register("apex-outsourcing-2026")
-    note = NarrationService(_Hallucinator()).narrate(reg)
+    note = NarrationService(_Hallucinator(), _GUARDRAIL).narrate(reg)
     assert note.model_authored is False
     assert "4242" not in note.text
     assert note_is_grounded(note.text, build_request(reg).facts)
@@ -65,7 +73,7 @@ def test_a_hallucinated_figure_is_discarded_for_the_grounded_fallback() -> None:
 
 def test_malformed_model_output_falls_back_and_stays_grounded() -> None:
     reg = _register("meridian-dpa-2026")
-    note = NarrationService(_Malformed()).narrate(reg)
+    note = NarrationService(_Malformed(), _GUARDRAIL).narrate(reg)
     assert note.model_authored is False
     assert note.grounded is True
     assert parse_note("not json") is None

@@ -81,6 +81,7 @@ from ..config import (
 )
 from ..domain.contracts import CrossTenantError, authorize_contract_access
 from ..domain.corpus import AS_OF, contract_by_id
+from ..domain.errors import GuardrailBlockedError
 from ..domain.models import TriageInput
 from ..domain.triage_service import TriageService
 from ..flow import run_contract_register
@@ -306,13 +307,20 @@ def triage(
     here,
     in the same request that produced it. Setting the flag is not the escalation; routing is.
     The maker is the verified principal, so the console records who originated the decision.
+
+    Rule R1: the guardrail screens the request text and the narrated summary in both directions
+    (``domain/triage_service.py``). A blocked direction is already audited BLOCKED inside the
+    service and answers 400 here, never a partial triage.
     """
     container = _container()
-    service = TriageService(container.audit, container.tracer)
-    result = service.triage(
-        TriageInput(subject=request.subject, text=request.text),
-        actor=principal.actor,
-    )
+    service = TriageService(container.audit, container.tracer, container.guardrail)
+    try:
+        result = service.triage(
+            TriageInput(subject=request.subject, text=request.text),
+            actor=principal.actor,
+        )
+    except GuardrailBlockedError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     # The hand-off never fails an already-scored, already-audited triage; the response says
     # what happened to it instead (the fleet's runtime-control contract).
     routing = RecordingReviewRouter(container.review_router)
@@ -341,6 +349,11 @@ def register(
     The contract is tenant-owned: the read is authorised against the VERIFIED principal's tenant,
     and a caller from another tenant is refused with 403 (never 404). The client-asserted actor
     and tenant never enter this decision; ``principal`` came from the identity port.
+
+    Rule R1: the extraction read is screened in both directions (``flow.py``). A refusal is
+    already audited BLOCKED in the flow and answers 400 here, never a partial register. A
+    refused narration is not a failure: the note falls back to the engine-built text and says so
+    (``note_guardrail_blocked``).
     """
     contract = contract_by_id(request.contract_id)
     if contract is None:
@@ -354,9 +367,12 @@ def register(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
 
     as_of = date.fromisoformat(request.as_of) if request.as_of else AS_OF
-    outcome = run_contract_register(
-        _container(), contract, as_of=as_of, actor=principal.actor, tenant=principal.tenant
-    )
+    try:
+        outcome = run_contract_register(
+            _container(), contract, as_of=as_of, actor=principal.actor, tenant=principal.tenant
+        )
+    except GuardrailBlockedError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return RegisterResponse.from_domain(
         outcome.register,
         note=outcome.note,

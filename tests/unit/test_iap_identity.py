@@ -407,6 +407,16 @@ _REBOUND_SETTINGS = "\n".join(
         f"    local: {_PKG}.adapters.local.identity:LocalIdentityAdapter",
         f"    gcp: {_PKG}.adapters.gcp.identity:IapIdentityAdapter",
         f"    onprem: {_PKG}.adapters.onprem.identity:OnPremIdentityAdapter",
+        # Every port must bind every profile or `_bindings_from` refuses the whole file, so
+        # this fixture lists the guardrail port too. It takes no part in the identity posture
+        # under test; the offline adapter keeps the rebuilt module SDK-free even under the
+        # `gcp` profile these runs bind.
+        "  guardrail:",
+        *[
+            f"    {p}: {_PKG}.adapters.local.guardrail:LocalHeuristicGuardrailAdapter"
+            for p in ("local", "gcp")
+        ],
+        f"    onprem: {_PKG}.adapters.onprem.guardrail:OnPremGuardrailAdapter",
         "  review_router:",
         *[
             f"    {p}: {_PKG}.adapters.local.review_router:LocalReviewRouter"

@@ -53,14 +53,13 @@ boot, so confirm both are served in your region before you enable either path.
 
 ## Remaining controls (TODO, repo owner)
 
-- **Prompt-injection screening** (rule R1). This is the highest-priority item for THIS repo, and
-  it is a bigger exposure than in most of the catalog: a contract is untrusted text written by a
-  counterparty and fed straight to a model. A clause crafted to read as an instruction could try
-  to suppress a liability-cap flag or invent a termination date. The propose-then-admit design
-  limits the blast radius (an injected flag outside the taxonomy is dropped, an injected date is
-  never used for arithmetic), but limiting a blast radius is not the same as screening. Bind the
-  `agent-guardrail-gateway` in front of `ExtractionPort` and fail closed when the screen is
-  unavailable.
+- **Prompt-injection screening on the managed read** (rule R1). The screen is in place: the
+  guardrail port sits in front of `ExtractionPort` (the counterparty and every clause, joined as
+  the model reads them, INPUT; everything proposed, OUTPUT) and fails closed, audited, when it
+  blocks or cannot decide (`flow.py`). What remains is sizing it for the real adapter: Model Armor
+  refuses a screen in which any filter was skipped, and a filter skips text past its token limit,
+  so a long contract screened whole is REFUSED rather than read. When the extraction adapter is
+  implemented, decide how the read is chunked and screen each chunk as it is sent.
 - **Implement the extraction adapter** and pin its processor, layout configuration, model id and
   version here.
 - **Budget, rate limit and a kill switch** (P-10, P-11): a long-context read of a full contract is

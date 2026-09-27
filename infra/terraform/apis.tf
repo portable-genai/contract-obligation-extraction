@@ -25,6 +25,7 @@ locals {
   required_services = [
     # Called by a bound adapter (adapters/gcp/).
     "logging.googleapis.com",       # audit.py: the WORM audit sink (rule R2)
+    "modelarmor.googleapis.com",    # guardrail.py: screens every generation call (rule R1)
     "cloudtrace.googleapis.com",    # tracer.py: spans, content off
     "iap.googleapis.com",           # identity.py: the one adapter that declares VERIFIED
     "secretmanager.googleapis.com", # the inbound and outbound service credentials

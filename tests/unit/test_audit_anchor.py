@@ -22,6 +22,9 @@ from hex_service_kit.audit import AuditChainError
 from contract_obligation_extraction.adapters.local.audit import (
     LocalAuditAdapter,
 )
+from contract_obligation_extraction.adapters.local.guardrail import (
+    LocalHeuristicGuardrailAdapter,
+)
 from contract_obligation_extraction.adapters.local.tracer import (
     LocalNoopTracerAdapter,
 )
@@ -56,7 +59,7 @@ def _record_three(settings: Settings) -> LocalAuditAdapter:
     container = build_container(settings)
     audit = container.audit
     assert isinstance(audit, LocalAuditAdapter)
-    service = TriageService(audit, container.tracer)
+    service = TriageService(audit, container.tracer, container.guardrail)
     for case in (sample_cases.ESCALATING_CASE, sample_cases.ROUTINE_CASE, sample_cases.PII_CASE):
         service.triage(case, actor=sample_cases.ACTOR)
     return audit
@@ -108,8 +111,9 @@ def test_an_append_after_truncation_cannot_relaunder_the_anchor(tmp_path: Path) 
 
     _truncate_tail(audit)
 
+    guardrail = LocalHeuristicGuardrailAdapter(settings)
     with pytest.raises(AuditChainError):
-        TriageService(audit, LocalNoopTracerAdapter(settings)).triage(
+        TriageService(audit, LocalNoopTracerAdapter(settings), guardrail).triage(
             sample_cases.ESCALATING_CASE, actor=sample_cases.ACTOR
         )
     assert Path(settings.audit_anchor_path).read_text(encoding="utf-8") == anchored_before

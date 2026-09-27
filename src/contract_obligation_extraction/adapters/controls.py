@@ -1,9 +1,11 @@
-"""The runtime-control seam: what switched-off routing binds, and what a caller reports.
+"""The runtime-control seam: what switched-off controls bind, and what a caller reports.
 
-**Disabled adapter.** When a deployment switches review routing off
+**Disabled adapters.** When a deployment switches review routing off
 (``CONTRACT_REVIEW_ROUTING=off``), the container binds :class:`DisabledReviewRouter` instead of
 the profile's class. It satisfies the port and submits nothing, and the container logs the
-posture at startup.
+posture at startup. Switching the guardrail off (``CONTRACT_GUARDRAIL=off``) binds
+:class:`DisabledGuardrail` the same way: it satisfies
+:class:`~..ports.guardrail.GuardrailPort` and allows everything, unchanged.
 
 **Recording wrapper.** Every caller that hands a result to the router (the triage route, the
 agent tools, the CLI, and the contract-register flow they share) wraps the bound router in
@@ -20,9 +22,24 @@ import logging
 from enum import StrEnum
 
 from ..config import Settings
+from ..domain.kernel import Direction, GuardrailVerdict
 from ..domain.models import TriageResult
 
 _log = logging.getLogger(__name__)
+
+
+class DisabledGuardrail:
+    """GuardrailPort with the guardrail switched off: allows everything, text unchanged."""
+
+    enabled = False
+
+    def __init__(self, settings: Settings) -> None:
+        self._settings = settings
+
+    def screen(self, text: str, direction: Direction) -> GuardrailVerdict:
+        return GuardrailVerdict(
+            allowed=True, direction=direction, sanitized_text=text, reason="guardrail off"
+        )
 
 
 class ReviewRouting(StrEnum):

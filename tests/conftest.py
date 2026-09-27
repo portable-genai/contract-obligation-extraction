@@ -79,7 +79,7 @@ def container(settings: Settings) -> Container:
 
 @pytest.fixture()
 def triage_service(container: Container) -> TriageService:
-    return TriageService(container.audit, container.tracer)
+    return TriageService(container.audit, container.tracer, container.guardrail)
 
 
 @pytest.fixture()

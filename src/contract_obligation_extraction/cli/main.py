@@ -11,6 +11,7 @@ from hex_service_kit.logging import configure_logging
 from ..adapters.controls import RecordingReviewRouter
 from ..config import build_container
 from ..domain.corpus import AS_OF, contract_by_id
+from ..domain.errors import GuardrailBlockedError
 from ..domain.models import TriageInput
 from ..domain.triage_service import TriageService
 from ..flow import run_contract_register
@@ -42,8 +43,15 @@ def main(argv: list[str] | None = None) -> int:
     configure_logging(container.settings.profile, service="contract-obligation-extraction")
 
     if args.command == "triage":
-        service = TriageService(container.audit, container.tracer)
-        result = service.triage(TriageInput(subject=args.subject, text=args.text), actor=args.actor)
+        service = TriageService(container.audit, container.tracer, container.guardrail)
+        try:
+            result = service.triage(
+                TriageInput(subject=args.subject, text=args.text), actor=args.actor
+            )
+        except GuardrailBlockedError as exc:
+            # Rule R1: already audited BLOCKED inside the service. Never a partial triage.
+            print(f"blocked by guardrail: {exc}", file=sys.stderr)
+            return 1
         print(f"{result.subject}: {result.severity.value} ({result.decision.value})")
         print(f"  requires_human_review: {result.requires_human_review}")
         # Rule R8 on the CLI path too: the same escalation, the same router. A surface that only
@@ -59,9 +67,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"no contract {args.contract_id!r} in the corpus", file=sys.stderr)
             return 2
         as_of = date.fromisoformat(args.as_of) if args.as_of else AS_OF
-        outcome = run_contract_register(
-            container, contract, as_of=as_of, actor=args.actor, tenant=args.tenant
-        )
+        try:
+            outcome = run_contract_register(
+                container, contract, as_of=as_of, actor=args.actor, tenant=args.tenant
+            )
+        except GuardrailBlockedError as exc:
+            # Rule R1: already audited BLOCKED inside the flow. Never a partial register.
+            print(f"blocked by guardrail: {exc}", file=sys.stderr)
+            return 1
         reg = outcome.register
         print(f"{reg.subject}: {reg.severity.value} ({reg.decision.value})")
         print(f"  obligations={len(reg.obligations)} dropped={len(reg.dropped)}")
@@ -69,7 +82,8 @@ def main(argv: list[str] | None = None) -> int:
             flags = ",".join(row.flag_values) or "-"
             mark = " [needs review]" if row.needs_review else ""
             print(f"  {row.clause_anchor}: {flags}{mark}")
-        print(f"  summary: {outcome.note.text}")
+        note_suffix = " [guardrail-blocked]" if outcome.note.guardrail_blocked else ""
+        print(f"  summary: {outcome.note.text}{note_suffix}")
         print(f"  human review hand-off : {outcome.review_routing} {outcome.review_ref}".rstrip())
         return 0
 

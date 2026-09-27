@@ -28,6 +28,9 @@ from contract_obligation_extraction.adapters.local.audit import (
 from contract_obligation_extraction.adapters.local.generation import (
     LocalGenerationAdapter,
 )
+from contract_obligation_extraction.adapters.local.guardrail import (
+    LocalHeuristicGuardrailAdapter,
+)
 from contract_obligation_extraction.adapters.local.tracer import (
     LocalNoopTracerAdapter,
 )
@@ -222,7 +225,9 @@ def run_smoke(dataset: Path) -> EvalReport:
     cases = _load(dataset)
     smoke_settings = Settings(profile="local", audit_path=":memory:")
     audit = LocalAuditAdapter(smoke_settings)
-    service = TriageService(audit, LocalNoopTracerAdapter(smoke_settings))
+    # The heuristic guardrail is the SDK-free stand-in (rule R1), like the no-op tracer.
+    guardrail = LocalHeuristicGuardrailAdapter(smoke_settings)
+    service = TriageService(audit, LocalNoopTracerAdapter(smoke_settings), guardrail)
 
     decision_scores: list[float] = []
     for case in cases:

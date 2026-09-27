@@ -46,7 +46,7 @@ def _settings(profile: str = "local") -> Settings:
 
 def _service() -> TriageService:
     container = build_container(_settings())
-    return TriageService(container.audit, container.tracer)
+    return TriageService(container.audit, container.tracer, container.guardrail)
 
 
 def _result(text: str, subject: str = "Acme Holdings (FICTIONAL)") -> TriageResult:

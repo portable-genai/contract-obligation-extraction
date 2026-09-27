@@ -148,9 +148,11 @@ This repo is one system in a catalog of composable GRC systems (see
 - `agent-registry`: this agent publishes its A2A card at
   `/.well-known/agent-card.json`; register it rather than inventing a discovery mechanism.
 
-The guardrail gateway (`agent-guardrail-gateway`) is **not** integrated, and it matters more here than in most repos:
-a contract is untrusted third-party text that reaches a model on the extraction path. Rule R1 in
-[`../COMPLIANCE.md`](../COMPLIANCE.md) records that.
+The guardrail (rule R1) is wired through `ports/guardrail.py`, and it matters more here than in most repos:
+a contract is untrusted third-party text that reaches a model on the extraction path. The read is
+screened before the extraction port is called and its proposals before the engine admits them;
+under `gcp` the screen is a regional Model Armor template. See Rule R1 in
+[`../COMPLIANCE.md`](../COMPLIANCE.md) and "Guardrail (rule R1)" in [`runbook.md`](runbook.md).
 
 ## 6. Adoption checklist
 
@@ -161,7 +163,7 @@ a contract is untrusted third-party text that reaches a model on the extraction 
 - [ ] Replaced the risk-flag taxonomy with yours, keeping the drop-unknown and
       route-ambiguous rules.
 - [ ] Decided whether the taxonomy needs to be configuration (the open B4 item) before go-live.
-- [ ] Wired `ExtractionPort` to your document pipeline, with `agent-guardrail-gateway` screening in front of it.
+- [ ] Wired `ExtractionPort` to your document pipeline, keeping the guardrail screen in front of it and chunking the read so no screen exceeds a filter's token limit.
 - [ ] Replaced the fictional corpus and every fixture.
 - [ ] Rebuilt the eval golden set for your contract families.
 - [ ] Reviewed the deploy posture (Dockerfile, Terraform, `retention_days`, bind address).

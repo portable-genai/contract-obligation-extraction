@@ -46,6 +46,18 @@ iap_audience: ${CONTRACT_IAP_AUDIENCE:-}
 # deliberately distinct from this service's own inbound CONTRACT_S2S_TOKEN.
 review_url: ${HUMAN_REVIEW_URL:-}
 
+# Rule R1: the Model Armor template the `gcp` guardrail adapter screens every generation call's
+# input and output through, and the regional host it calls (never the global endpoint, P-05).
+# `template_id` matches the template `infra/terraform/model_armor.tf` creates, so a zero-edit
+# render names a template its own Terraform provisions. Guardrail on (CONTRACT_GUARDRAIL, unset
+# means on) under the managed profile REFUSES TO BOOT when template_id is empty and the bound
+# adapter is ModelArmorGuardrailAdapter; CONTRACT_GUARDRAIL=off states the guardrail off.
+model_armor:
+  template_id: ${CONTRACT_MODEL_ARMOR_TEMPLATE:-contract-obligation-extraction-guardrail}
+  host: ${CONTRACT_MODEL_ARMOR_HOST:-modelarmor.asia-southeast1.rep.googleapis.com}
+  # The deadline on every sanitize call. A timeout fails CLOSED (audited, then refused).
+  timeout_seconds: 10.0
+
 # The per-port adapter map: the ONLY place a binding lives, so switching the whole stack is a
 # configuration change rather than a code edit. Every port must bind every profile; the loader
 # refuses a partial block and `tests/test_settings_file.py` fails the build if this drifts from
@@ -57,6 +69,12 @@ adapters:
     local: contract_obligation_extraction.adapters.local.audit:LocalAuditAdapter
     gcp: contract_obligation_extraction.adapters.gcp.audit:CloudAuditAdapter
     onprem: contract_obligation_extraction.adapters.onprem.audit:OnPremAuditAdapter
+  # Rule R1: screens every generation call's input (before) and output (after). local is a
+  # deterministic heuristic stand-in; there is no offline emulator for Model Armor.
+  guardrail:
+    local: contract_obligation_extraction.adapters.local.guardrail:LocalHeuristicGuardrailAdapter
+    gcp: contract_obligation_extraction.adapters.gcp.guardrail:ModelArmorGuardrailAdapter
+    onprem: contract_obligation_extraction.adapters.onprem.guardrail:OnPremGuardrailAdapter
   identity:
     local: contract_obligation_extraction.adapters.local.identity:LocalIdentityAdapter
     gcp: contract_obligation_extraction.adapters.gcp.identity:IapIdentityAdapter

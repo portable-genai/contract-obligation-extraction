@@ -20,15 +20,16 @@ A contract is UNTRUSTED THIRD-PARTY TEXT, written by a counterparty, that this s
 model. That is the highest-value prompt-injection target in the catalog: a clause crafted to read
 as an instruction could try to suppress a liability-cap flag or invent a termination date.
 
-Two things stand between that and a wrong register, and only one of them is in place:
+Two things stand between that and a wrong register, and both are in place:
 
 - **In place:** the model can only PROPOSE. `domain/flags.py` and `domain/contracts.py` decide
   admissibility against a frozen taxonomy, a proposal outside the taxonomy is dropped rather than
   coerced, an ambiguous proposal is routed to a human, and no date arithmetic is ever the model's.
   So a successful injection changes what is proposed, not what is admitted unreviewed.
-- **NOT in place:** screening. The `agent-guardrail-gateway` is not bound in front of
-  `ExtractionPort`. Rule R1 in `COMPLIANCE.md` records that, and it is the highest-priority
-  security item for this repo.
+- **In place:** screening. The guardrail port screens the text the extractor reads before
+  `ExtractionPort` is called and everything it proposes before the engine admits it, and a
+  refusal (or a guardrail that cannot decide) is audited and refuses the whole register. Under
+  `gcp` the screen is a regional Model Armor template. Rule R1 in `COMPLIANCE.md` records it.
 
 ### What does the extraction seam actually do today?
 
@@ -91,7 +92,6 @@ object rather than an annotated tag object.
 ### What is deliberately out of scope?
 
 - **Login.** This repo authenticates nobody itself: the platform in front of it does.
-- **Injection defence and output filtering.** Owned by `agent-guardrail-gateway`; not bound, and needed here.
 - **The document store.** This service reads a corpus; where contracts live, who may read them and
   how long they are kept are adopter controls.
 - **The review queue.** Owned by `human-review-console`; this repo produces escalations and routes them.

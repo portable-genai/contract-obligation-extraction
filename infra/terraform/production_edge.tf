@@ -120,6 +120,12 @@ resource "google_cloud_run_v2_service" "api" {
         name  = "${local.render_env_prefix}_REVIEW_ROUTING"
         value = tostring(var.review_routing_enabled)
       }
+      # The guardrail switch (rule R1), stated the same way: on in the reference, and off is a
+      # logged deployment choice rather than a silent one.
+      env {
+        name  = "${local.render_env_prefix}_GUARDRAIL"
+        value = tostring(var.guardrail_enabled)
+      }
 
       # The three variables below are set only when they carry a value. This service reads its
       # environment in THREE states, and a variable set to empty is an expressed intent that

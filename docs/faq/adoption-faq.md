@@ -104,7 +104,7 @@ the real loopback server and exits non-zero when a claim stops being true.
 ### What is still open?
 
 [`../practices-audit.md`](../practices-audit.md) carries the per-check verdict and the work list.
-The three that matter most before production: the managed extraction adapter, the `agent-guardrail-gateway`
-in front of it (a contract is untrusted third-party text), and registering this repo's metric
+The three that matter most before production: the managed extraction adapter, chunking its read
+so the guardrail screen in front of it is not refused for length, and registering this repo's metric
 bundle with `model-quality-gate` so `eval/run_eval.py --mode gate` has an authority to ask. The Terraform stack is
 written, validated and tested against a mocked provider; it has never been applied.

@@ -52,6 +52,10 @@ gcp = [
   # profile. Found by the lint-gcp job, the first check able to see these imports.
   "google-cloud-documentai>=3.0",
   "google-genai>=2.0",
+  # GuardrailPort on the gcp profile (adapters/gcp/guardrail.py, rule R1). Declared here so the
+  # runtime image carries it and lint-gcp type-checks the adapter against it: undeclared, the
+  # adapter imported clean offline and would have failed its first screen in production.
+  "google-cloud-modelarmor>=0.7",
 ]
 
 [project.scripts]
