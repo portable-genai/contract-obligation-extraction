@@ -26,6 +26,7 @@ from typing import Any
 from agent_eval_kit import EvalReport
 from hex_service_kit.identity import IdentityError, Principal, RequestContext
 from hex_service_kit.observability import TokenUsage
+from hex_service_kit.tracing import CollectorEndpointRequiredError
 
 from contract_obligation_extraction.domain.kernel import (
     AuditEvent,
@@ -112,6 +113,8 @@ class PortCase:
     answered: Callable[[Any, Any], bool]
     managed_refusal: tuple[type[BaseException], ...]
     detail: str
+    #: False only where on-prem binds a tracer-like no-op rather than a placeholder.
+    onprem_refuses: bool = True
 
 
 def _audit_invoke(adapter: Any) -> Any:
@@ -231,10 +234,13 @@ CANONICAL_CALLS: dict[str, PortCase] = {
     "tracer": PortCase(
         invoke=_tracer_invoke,
         answered=_tracer_answered,
-        # NOTHING. Tracing is not essential to correctness, so the managed adapter must not refuse
-        # offline either: with no SDK it degrades to a no-op and the traced body still runs. An
-        # adapter that raised here would take a request down over a diagnostic.
-        managed_refusal=(),
+        # Decision D1: with no collector endpoint the managed tracer REFUSES, because the only
+        # alternative was exporting around the collector's GenAI-content redaction. That is a
+        # configuration refusal, not an exporter fault: with an endpoint configured it still
+        # degrades to a no-op offline (the test after the parity table proves it). On-prem
+        # binds its own tracer, which records nothing and never refuses.
+        managed_refusal=(CollectorEndpointRequiredError,),
+        onprem_refuses=False,
         detail="open one span and report the cost of a model call",
     ),
     "evaluation": PortCase(

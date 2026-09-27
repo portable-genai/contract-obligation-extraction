@@ -314,8 +314,9 @@ variable "quality_service_url" {
 variable "otlp_endpoint" {
   description = <<-EOT
     OpenTelemetry collector endpoint (OTEL_EXPORTER_OTLP_ENDPOINT, rule R2). Set it to the
-    agent-observability collector to send spans there; leave it empty and the tracer exports straight to
-    Cloud Trace. Empty means the variable is not set on the service at all.
+    agent-observability collector's otlp_endpoint output. Empty means the variable is not set on the
+    service at all, and the gcp tracer then refuses to build: there is no direct Cloud Trace export
+    to fall back to.
   EOT
   type        = string
   default     = ""
