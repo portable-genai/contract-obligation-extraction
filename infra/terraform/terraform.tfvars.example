@@ -7,16 +7,16 @@
 #
 # The state backend is partial (providers.tf). Initialise it with the reviewed bucket:
 #   terraform init -backend-config="bucket=YOUR_STATE_BUCKET" \
-#                  -backend-config="prefix={{ cookiecutter.project_slug }}/ENVIRONMENT"
+#                  -backend-config="prefix=contract-obligation-extraction/ENVIRONMENT"
 # Offline validation of this configuration needs no bucket and no credentials, and is what
 # `make tf-check` and the terraform CI job run:
 #   terraform init -backend=false && terraform validate && terraform fmt -check -recursive
 #   terraform test
 
-project_id = "fictional-{{ cookiecutter.package_name }}-project" # obviously fictional; replace
+project_id = "fictional-contract_obligation_extraction-project" # obviously fictional; replace
 
 # ----------------------------------------------------------------------------- #
-# Residency. This repo was rendered for {{ cookiecutter.region }}, and that is the
+# Residency. This repo was rendered for asia-southeast1, and that is the
 # default for both variables below (they are nullable in variables.tf and made
 # effective in naming.tf from render.tf.json), what the org-policy allowlist pins,
 # and what the application validates its own configured region against at settings
@@ -25,8 +25,8 @@ project_id = "fictional-{{ cookiecutter.package_name }}-project" # obviously fic
 # (Vertex AI, Cloud KMS, Cloud Logging, Cloud Run) and this vertical's residency
 # obligation are both satisfied in the new region.
 # ----------------------------------------------------------------------------- #
-# region          = "{{ cookiecutter.region }}"
-# allowed_regions = ["{{ cookiecutter.region }}"]
+# region          = "asia-southeast1"
+# allowed_regions = ["asia-southeast1"]
 
 # ----------------------------------------------------------------------------- #
 # POSTURE A: quick evaluation (project-scoped, no org roles, fully destroyable).
@@ -44,7 +44,7 @@ access_policy_id = "123456789012"
 vpc_sc_enforce   = false
 operator_members = [
   # "user:platform-lead@example.com",
-  # "serviceAccount:ci@fictional-{{ cookiecutter.package_name }}-project.iam.gserviceaccount.com",
+  # "serviceAccount:ci@fictional-contract_obligation_extraction-project.iam.gserviceaccount.com",
 ]
 
 # Retention is deliberate because the lock is irreversible. 180 days is the floor.
@@ -52,7 +52,7 @@ retention_days = 180
 worm_locked    = true
 
 alert_notification_channels = [
-  # "projects/fictional-{{ cookiecutter.package_name }}-project/notificationChannels/1234567890123456789",
+  # "projects/fictional-contract_obligation_extraction-project/notificationChannels/1234567890123456789",
 ]
 
 # Set a per-repo prefix whenever more than one catalog service deploys into the same
@@ -68,8 +68,8 @@ production_edge_enabled = false
 
 # api_image must be pinned by digest: a tag can be re-pushed, so a tag pin lets what
 # serves change with no diff.
-# api_image      = "{{ cookiecutter.region }}-docker.pkg.dev/fictional-{{ cookiecutter.package_name }}-project/agent/api@sha256:0000000000000000000000000000000000000000000000000000000000000000"
-# service_domain = "{{ cookiecutter.project_slug }}.fictional-bank.example"
+# api_image      = "asia-southeast1-docker.pkg.dev/fictional-contract_obligation_extraction-project/agent/api@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+# service_domain = "contract-obligation-extraction.fictional-bank.example"
 # dns_managed_zone = "fictional-bank-example"
 
 # Rule R8: the human-review-console an escalation is routed to. Required when the edge is
@@ -100,14 +100,14 @@ guardrail_enabled = true
 
 # Set this to the `iap_audience` OUTPUT of the first apply, then apply again. Until it
 # is set, the service starts, stays health-checkable and refuses every end-user request
-# with a 503 naming {{ cookiecutter.env_prefix }}_IAP_AUDIENCE.
+# with a 503 naming CONTRACT_IAP_AUDIENCE.
 # iap_audience = "/projects/123456789012/global/backendServices/1234567890123456789"
 
 # Credentials arrive as pinned Secret Manager versions, never as values here. The names
 # this stack sets itself are reserved (naming.tf), so a secret cannot silently shadow the
 # residency, identity or routing wiring.
 # additional_secret_env = {
-#   {{ cookiecutter.env_prefix }}_S2S_TOKEN = { secret_id = "inbound-s2s", version = "3" }
+#   CONTRACT_S2S_TOKEN = { secret_id = "inbound-s2s", version = "3" }
 #   HUMAN_REVIEW_S2S_TOKEN       = { secret_id = "hrz7-outbound-s2s", version = "2" }
 #   HUMAN_REVIEW_S2S_SIGNING_KEY = { secret_id = "hrz7-actor-signing", version = "1" }
 # }
