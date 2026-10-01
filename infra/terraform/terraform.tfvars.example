@@ -30,10 +30,8 @@ project_id = "fictional-{{ cookiecutter.package_name }}-project" # obviously fic
 
 # ----------------------------------------------------------------------------- #
 # POSTURE A: quick evaluation (project-scoped, no org roles, fully destroyable).
-# NOT a compliant production deployment. Uncomment the three lines together.
+# NOT a compliant production deployment. Uncomment the line below.
 # ----------------------------------------------------------------------------- #
-# enable_org_policies = false
-# enable_vpc_sc       = false
 # worm_locked         = false
 
 # ----------------------------------------------------------------------------- #
@@ -113,3 +111,9 @@ guardrail_enabled = true
 #   HUMAN_REVIEW_S2S_TOKEN       = { secret_id = "hrz7-outbound-s2s", version = "2" }
 #   HUMAN_REVIEW_S2S_SIGNING_KEY = { secret_id = "hrz7-actor-signing", version = "1" }
 # }
+
+# Slice 7 (2026-10-01): the perimeter and the org policies default OFF in code, so a
+# production deployment states them. A shared project states false in every stack but
+# the one that owns them.
+enable_vpc_sc = true
+enable_org_policies = true

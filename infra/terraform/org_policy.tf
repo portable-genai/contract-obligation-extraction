@@ -14,7 +14,7 @@
 # rights beyond the target project. Requires orgpolicy.googleapis.com (apis.tf) and that the
 # caller holds roles/orgpolicy.policyAdmin on the project.
 #
-# Gating: every policy here is created only when var.enable_org_policies = true (the default).
+# Gating: every policy here is created only when var.enable_org_policies = true (the production form; false by default since 2026-10-01).
 # Set it false for a project-scoped evaluation deploy by a caller without that role; the
 # per-resource region pins still apply, but this layer is skipped, which is NOT compliant for
 # production.
