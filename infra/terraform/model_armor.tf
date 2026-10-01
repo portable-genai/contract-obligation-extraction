@@ -15,7 +15,7 @@
 #
 # The malicious-URI filter and multi-language detection are NOT served in every region: a region
 # that refuses them fails the whole template with CAPABILITY_NOT_SUPPORTED rather than degrading,
-# so both are gated on var.model_armor_full_capabilities (default true) and a deployment in such
+# so both are gated on var.model_armor_full_capabilities (default false, slice 7 of the posture rule): a deployment in such
 # a region sets it false explicitly and discloses the narrowed guardrail instead of failing every
 # apply. See docs/gcp-service-region-availability.md upstream for which regions serve which.
 #
