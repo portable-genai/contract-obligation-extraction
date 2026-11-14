@@ -9,7 +9,7 @@
 # Builder: resolve nothing, install the lockfile into a venv we copy forward.
 # --------------------------------------------------------------------------- #
 # Resolved from library/python tag 3.12-slim; dependabot's docker ecosystem proposes digest bumps.
-FROM python:3.14-slim@sha256:ce40764625a4ff50df3548277632e7f96c4e77fe75fa848aae9885476e7df5a4 AS builder
+FROM python:3.15-slim@sha256:65a65fc7b30b06cb6df4930fd4650697cb23f4c2698ab81fc87e4b031bc36928 AS builder
 
 ENV PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
@@ -39,7 +39,7 @@ RUN pip install --upgrade pip \
 # --------------------------------------------------------------------------- #
 # Runtime: slim, non-root, no build tools, venv copied from the builder.
 # --------------------------------------------------------------------------- #
-FROM python:3.14-slim@sha256:ce40764625a4ff50df3548277632e7f96c4e77fe75fa848aae9885476e7df5a4 AS runtime
+FROM python:3.15-slim@sha256:65a65fc7b30b06cb6df4930fd4650697cb23f4c2698ab81fc87e4b031bc36928 AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
